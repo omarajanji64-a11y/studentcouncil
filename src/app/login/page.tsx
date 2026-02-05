@@ -34,6 +34,8 @@ export default function LoginPage() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading("signin");
+    // In a real app, you'd have a proper auth flow.
+    // We'll simulate a login for the test account.
     if (email === "test@ihsan.com" && password === "admin") {
       await mockLogin({
         uid: "test-user-1",
