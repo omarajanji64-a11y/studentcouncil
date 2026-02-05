@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import type { User } from "@/lib/types";
 import { useAuth } from "@/hooks/use-auth";
+import { motion } from "framer-motion";
+import { easing, durations } from "@/lib/animations";
 
 interface AppSidebarProps {
   user: User;
@@ -93,7 +95,12 @@ export function AppSidebar({ user }: AppSidebarProps) {
   };
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
+    <motion.aside
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: durations.base, ease: easing }}
+      className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex"
+    >
       <TooltipProvider>
         <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
           <Link
@@ -145,6 +152,6 @@ export function AppSidebar({ user }: AppSidebarProps) {
           </Tooltip>
         </nav>
       </TooltipProvider>
-    </aside>
+    </motion.aside>
   );
 }

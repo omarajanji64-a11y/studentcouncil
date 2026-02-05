@@ -17,9 +17,10 @@ import {
   type DocumentData,
   type Query,
 } from "firebase/firestore";
+import { httpsCallable } from "firebase/functions";
 import type { Break, Log, Notification, Pass, User } from "@/lib/types";
 import { collections, converters, docRefs, serverCreatedAt } from "@/lib/firestore";
-import { db } from "@/lib/firebase";
+import { db, functions } from "@/lib/firebase";
 
 type LoadingState<T> = {
   data: T[];
@@ -151,6 +152,42 @@ export const removeUser = async (uid: string) => {
   const ref = docRefs.user(uid);
   if (!ref) throw new Error("Firestore not configured");
   await deleteDoc(ref);
+};
+
+export const createUser = async (profile: {
+  name: string;
+  email: string;
+  role?: User["role"];
+  password: string;
+}) => {
+  if (!functions) throw new Error("Firebase Functions not configured");
+  const callable = httpsCallable<
+    {
+      email: string;
+      password: string;
+      name: string;
+      role: User["role"];
+    },
+    { uid: string }
+  >(functions, "createAuthUser");
+  const result = await callable({
+    email: profile.email,
+    password: profile.password,
+    name: profile.name,
+    role: profile.role ?? "member",
+  });
+  const uid = result.data?.uid;
+  if (!uid) throw new Error("Could not create auth user.");
+  const ref = docRefs.user(uid);
+  if (!ref) throw new Error("Firestore not configured");
+  await setDoc(ref, {
+    name: profile.name,
+    email: profile.email,
+    role: profile.role ?? "member",
+    avatar: null,
+    notificationsEnabled: false,
+    updatedAt: serverCreatedAt(),
+  });
 };
 
 export const createNotification = async (

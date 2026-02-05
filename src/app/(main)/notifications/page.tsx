@@ -12,6 +12,7 @@ import { useState } from "react";
 import { createNotification } from "@/hooks/use-firestore";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function NotificationsPage() {
   useRequireAuth("supervisor");
@@ -97,6 +98,7 @@ export default function NotificationsPage() {
         </CardContent>
         <CardFooter>
             <Button className="ml-auto gap-2" onClick={handleSend} disabled={isSending}>
+                {isSending && <Skeleton className="h-4 w-4 rounded-full" />}
                 <Send className="h-4 w-4" />
                 Broadcast
             </Button>

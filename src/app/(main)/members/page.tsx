@@ -2,6 +2,15 @@
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -21,14 +30,31 @@ import {
 import { MoreHorizontal, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useRequireAuth } from "@/hooks/use-auth";
-import { removeUser, updateUserRole, useUsers } from "@/hooks/use-firestore";
+import {
+  createUser,
+  removeUser,
+  updateUserRole,
+  useUsers,
+} from "@/hooks/use-firestore";
 import { useToast } from "@/hooks/use-toast";
+import { MotionModal } from "@/components/motion/motion-modal";
+import { useState } from "react";
 
 export default function MembersPage() {
   const { user: currentUser } = useRequireAuth("supervisor");
   const { data: users, loading } = useUsers();
   const { toast } = useToast();
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [inviteName, setInviteName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [invitePassword, setInvitePassword] = useState("");
+  const [inviteRole, setInviteRole] = useState<"member" | "supervisor">(
+    "member"
+  );
 
   const handleRoleChange = (uid: string, newRole: "member" | "supervisor") => {
     updateUserRole(uid, newRole).catch(() =>
@@ -50,6 +76,52 @@ export default function MembersPage() {
     );
   };
 
+  const handleCreateUser = async () => {
+    if (!inviteName.trim() || !inviteEmail.trim() || !invitePassword.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Missing fields",
+        description: "Name, email, and a temporary password are required.",
+      });
+      return;
+    }
+    if (invitePassword.trim().length < 6) {
+      toast({
+        variant: "destructive",
+        title: "Password too short",
+        description: "Password must be at least 6 characters.",
+      });
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      await createUser({
+        name: inviteName.trim(),
+        email: inviteEmail.trim(),
+        password: invitePassword.trim(),
+        role: inviteRole,
+      });
+      setIsCreating(false);
+      setIsInviteOpen(false);
+      setInviteName("");
+      setInviteEmail("");
+      setInvitePassword("");
+      setInviteRole("member");
+      toast({
+        title: "Member added",
+        description: "The member profile was created successfully.",
+      });
+    } catch (error) {
+      setIsCreating(false);
+      toast({
+        variant: "destructive",
+        title: "Create failed",
+        description: "Could not create the member profile and login.",
+      });
+    }
+  };
+
   if (!currentUser) {
     return null;
   }
@@ -60,10 +132,88 @@ export default function MembersPage() {
         title="Manage Members"
         description="Add, remove, and manage roles for staff members."
       >
-        <Button size="sm" className="gap-1">
-          <UserPlus className="h-4 w-4" />
-          Invite Member
-        </Button>
+        <MotionModal
+          open={isInviteOpen}
+          onOpenChange={setIsInviteOpen}
+          trigger={
+            <Button size="sm" className="gap-1">
+              <UserPlus className="h-4 w-4" />
+              Add Member
+            </Button>
+          }
+          title="Add Member"
+          description="Create a member profile for staff access."
+          contentClassName="sm:max-w-[480px]"
+          footer={
+            <Button onClick={handleCreateUser} disabled={isCreating}>
+              {isCreating && <Skeleton className="mr-2 h-4 w-4 rounded-full" />}
+              Add Member
+            </Button>
+          }
+        >
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="invite-name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="invite-name"
+                placeholder="Full name"
+                className="col-span-3"
+                value={inviteName}
+                onChange={(event) => setInviteName(event.target.value)}
+                disabled={isCreating}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="invite-email" className="text-right">
+                Email
+              </Label>
+              <Input
+                id="invite-email"
+                placeholder="name@school.edu"
+                className="col-span-3"
+                value={inviteEmail}
+                onChange={(event) => setInviteEmail(event.target.value)}
+                disabled={isCreating}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="invite-password" className="text-right">
+                Temp password
+              </Label>
+              <Input
+                id="invite-password"
+                type="password"
+                placeholder="Minimum 6 characters"
+                className="col-span-3"
+                value={invitePassword}
+                onChange={(event) => setInvitePassword(event.target.value)}
+                disabled={isCreating}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="invite-role" className="text-right">
+                Role
+              </Label>
+              <Select
+                value={inviteRole}
+                onValueChange={(value: "member" | "supervisor") =>
+                  setInviteRole(value)
+                }
+                disabled={isCreating}
+              >
+                <SelectTrigger id="invite-role" className="col-span-3">
+                  <SelectValue placeholder="Choose role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="supervisor">Supervisor</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </MotionModal>
       </PageHeader>
       <Card>
         <CardContent className="pt-6">
@@ -82,7 +232,10 @@ export default function MembersPage() {
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={4} className="h-24 text-center">
-                    Loading members...
+                    <div className="space-y-3">
+                      <Skeleton className="h-4 w-2/3 mx-auto" />
+                      <Skeleton className="h-4 w-1/2 mx-auto" />
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : users.length ? (

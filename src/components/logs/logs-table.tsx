@@ -19,8 +19,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, File } from "lucide-react";
-import { Badge } from "../ui/badge";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { format } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function LogsTable({ data, loading }: { data: Log[]; loading?: boolean }) {
   const [filter, setFilter] = React.useState("");
@@ -47,19 +48,6 @@ export function LogsTable({ data, loading }: { data: Log[]; loading?: boolean })
   }, [filteredData, currentPage, rowsPerPage]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / rowsPerPage));
-
-  const getStatusBadge = (status: Log["status"]) => {
-    switch (status) {
-      case "active":
-        return <Badge variant="default" className="bg-green-500 hover:bg-green-600">Active</Badge>;
-      case "expired":
-        return <Badge variant="secondary">Expired</Badge>;
-      case "revoked":
-        return <Badge variant="destructive">Revoked</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
 
   return (
     <div className="space-y-4">
@@ -117,7 +105,10 @@ export function LogsTable({ data, loading }: { data: Log[]; loading?: boolean })
             {loading ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-24 text-center">
-                  Loading logs...
+                  <div className="space-y-3">
+                    <Skeleton className="h-4 w-2/3 mx-auto" />
+                    <Skeleton className="h-4 w-1/2 mx-auto" />
+                  </div>
                 </TableCell>
               </TableRow>
             ) : paginatedData.length ? (
@@ -127,7 +118,9 @@ export function LogsTable({ data, loading }: { data: Log[]; loading?: boolean })
                   <TableCell>{log.reason}</TableCell>
                   <TableCell>{format(new Date(log.issuedAt), 'PPp')}</TableCell>
                   <TableCell>{log.issuedBy}</TableCell>
-                  <TableCell>{getStatusBadge(log.status)}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={log.status} />
+                  </TableCell>
                 </TableRow>
               ))
             ) : (

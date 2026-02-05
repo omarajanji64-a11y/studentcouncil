@@ -10,6 +10,8 @@ import {
   CardContent,
   CardDescription,
 } from "@/components/ui/card";
+import { AnimatedCard } from "@/components/motion/animated-card";
+import { AnimatedList } from "@/components/motion/animated-list";
 import { useAuth } from "@/hooks/use-auth";
 import { Ticket, ScrollText, CalendarClock, Users } from "lucide-react";
 
@@ -52,15 +54,17 @@ export default function DashboardPage() {
         description="Overview of canteen pass activity."
       />
       <div className="grid gap-6">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <BreakStatusCard />
-        </div>
+        <AnimatedList className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <AnimatedCard>
+            <BreakStatusCard />
+          </AnimatedCard>
+        </AnimatedList>
 
         <div className="space-y-4 pt-6">
           <h2 className="text-xl font-semibold tracking-tight">
             Quick Shortcuts
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <AnimatedList className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {shortcuts.map(
               (shortcut) =>
                 (!shortcut.role || user?.role === "supervisor") && (
@@ -69,27 +73,29 @@ export default function DashboardPage() {
                     key={shortcut.href}
                     className="block hover:no-underline"
                   >
-                    <Card className="h-full transition-all hover:border-primary/50 hover:bg-muted/50">
-                      <CardHeader>
-                        <div className="flex items-center gap-4">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                            <shortcut.icon className="h-6 w-6" />
+                    <AnimatedCard>
+                      <Card className="h-full transition-colors hover:border-primary/50 hover:bg-muted/50">
+                        <CardHeader>
+                          <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                              <shortcut.icon className="h-6 w-6" />
+                            </div>
+                            <CardTitle className="text-lg">
+                              {shortcut.title}
+                            </CardTitle>
                           </div>
-                          <CardTitle className="text-lg">
-                            {shortcut.title}
-                          </CardTitle>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <CardDescription>
-                          {shortcut.description}
-                        </CardDescription>
-                      </CardContent>
-                    </Card>
+                        </CardHeader>
+                        <CardContent>
+                          <CardDescription>
+                            {shortcut.description}
+                          </CardDescription>
+                        </CardContent>
+                      </Card>
+                    </AnimatedCard>
                   </Link>
                 )
             )}
-          </div>
+          </AnimatedList>
         </div>
       </div>
     </div>

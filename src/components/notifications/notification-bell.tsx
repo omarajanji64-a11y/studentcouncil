@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   markNotificationsRead,
   useNotificationReads,
@@ -22,6 +23,8 @@ import {
 } from "@/hooks/use-firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { easing, durations } from "@/lib/animations";
 
 export function NotificationBell() {
   const { user } = useAuth();
@@ -59,9 +62,14 @@ export function NotificationBell() {
         >
           <Bell className="h-5 w-5" />
           {notificationsEnabled && unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+            <motion.span
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: durations.fast, ease: easing }}
+              className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground"
+            >
               {unreadCount}
-            </span>
+            </motion.span>
           )}
         </Button>
       </PopoverTrigger>
@@ -81,30 +89,41 @@ export function NotificationBell() {
                     Notifications are off. Enable them in Settings.
                   </p>
                 ) : loading ? (
-                  <p className="text-sm text-muted-foreground">Loading...</p>
-                ) : notifications.length ? (
-                  notifications.map((notification, index) => (
-                    <div
-                      key={notification.id}
-                      className={`flex items-start gap-4 ${
-                        readIds.has(notification.id) ? "" : "font-semibold"
-                      }`}
-                    >
-                      <div
-                        className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                          readIds.has(notification.id)
-                            ? "bg-transparent"
-                            : "bg-primary"
-                        }`}
-                      />
-                    <div className="grid gap-1">
-                      <p className="text-sm leading-none">{notification.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {notification.message}
-                      </p>
-                    </div>
+                  <div className="space-y-3">
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-4 w-5/6" />
                   </div>
-                  ))
+                ) : notifications.length ? (
+                  <AnimatePresence initial={false}>
+                    {notifications.map((notification) => (
+                      <motion.div
+                        key={notification.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 8 }}
+                        transition={{ duration: durations.base, ease: easing }}
+                        className={`flex items-start gap-4 ${
+                          readIds.has(notification.id) ? "" : "font-semibold"
+                        }`}
+                      >
+                        <div
+                          className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                            readIds.has(notification.id)
+                              ? "bg-transparent"
+                              : "bg-primary"
+                          }`}
+                        />
+                        <div className="grid gap-1">
+                          <p className="text-sm leading-none">
+                            {notification.title}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {notification.message}
+                          </p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 ) : (
                   <p className="text-sm text-muted-foreground">
                     No notifications yet.

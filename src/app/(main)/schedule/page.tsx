@@ -2,15 +2,6 @@
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -35,6 +26,10 @@ import { format } from "date-fns";
 import { createBreak, useBreaks } from "@/hooks/use-firestore";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { MotionModal } from "@/components/motion/motion-modal";
+import { Skeleton } from "@/components/ui/skeleton";
+import { motion } from "framer-motion";
+import { easing, durations } from "@/lib/animations";
 
 export default function SchedulePage() {
   const { data: breaks, loading } = useBreaks();
@@ -90,54 +85,50 @@ export default function SchedulePage() {
         title="Break Scheduler"
         description="Manage daily break times for pass issuing."
       >
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
+        <MotionModal
+          open={isOpen}
+          onOpenChange={setIsOpen}
+          trigger={
             <Button size="sm" className="gap-1">
               <PlusCircle className="h-4 w-4" />
               New Break
             </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Schedule a Break</DialogTitle>
-              <DialogDescription>
-                Breaks are synced to Firestore and update in real time.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="break-name">Name</Label>
-                <Input
-                  id="break-name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="e.g., Lunch"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="break-start">Start Time</Label>
-                <Input
-                  id="break-start"
-                  type="time"
-                  value={startTime}
-                  onChange={(event) => setStartTime(event.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="break-end">End Time</Label>
-                <Input
-                  id="break-end"
-                  type="time"
-                  value={endTime}
-                  onChange={(event) => setEndTime(event.target.value)}
-                />
-              </div>
+          }
+          title="Schedule a Break"
+          description="Breaks are synced to Firestore and update in real time."
+          contentClassName="sm:max-w-[425px]"
+          footer={<Button onClick={handleCreateBreak}>Save Break</Button>}
+        >
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="break-name">Name</Label>
+              <Input
+                id="break-name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="e.g., Lunch"
+              />
             </div>
-            <DialogFooter>
-              <Button onClick={handleCreateBreak}>Save Break</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            <div className="grid gap-2">
+              <Label htmlFor="break-start">Start Time</Label>
+              <Input
+                id="break-start"
+                type="time"
+                value={startTime}
+                onChange={(event) => setStartTime(event.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="break-end">End Time</Label>
+              <Input
+                id="break-end"
+                type="time"
+                value={endTime}
+                onChange={(event) => setEndTime(event.target.value)}
+              />
+            </div>
+          </div>
+        </MotionModal>
       </PageHeader>
       <Card>
         <CardHeader>
@@ -163,7 +154,10 @@ export default function SchedulePage() {
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={5} className="h-24 text-center">
-                    Loading breaks...
+                    <div className="space-y-3">
+                      <Skeleton className="h-4 w-2/3 mx-auto" />
+                      <Skeleton className="h-4 w-1/2 mx-auto" />
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : breaks.length ? (
@@ -173,11 +167,26 @@ export default function SchedulePage() {
                   <TableCell>{format(new Date(breakItem.startTime), 'p')}</TableCell>
                   <TableCell>{format(new Date(breakItem.endTime), 'p')}</TableCell>
                   <TableCell>
-                    {isBreakActive(breakItem) ? (
-                      <Badge className="bg-green-500">Active</Badge>
-                    ) : (
-                      <Badge variant="secondary">Inactive</Badge>
-                    )}
+                    <motion.div
+                      animate={{
+                        backgroundColor: isBreakActive(breakItem)
+                          ? "rgba(34, 197, 94, 0.15)"
+                          : "rgba(148, 163, 184, 0.18)",
+                        color: isBreakActive(breakItem)
+                          ? "rgb(21, 128, 61)"
+                          : "rgb(100, 116, 139)",
+                        scale: isBreakActive(breakItem) ? [1, 1.04, 1] : 1,
+                      }}
+                      transition={{ duration: durations.base, ease: easing }}
+                      className="inline-flex rounded-full"
+                    >
+                      <Badge
+                        variant="outline"
+                        className="border-transparent bg-transparent px-2.5 py-0.5 text-xs font-semibold"
+                      >
+                        {isBreakActive(breakItem) ? "Active" : "Inactive"}
+                      </Badge>
+                    </motion.div>
                   </TableCell>
                   <TableCell>
                     <Button aria-haspopup="true" size="icon" variant="ghost">

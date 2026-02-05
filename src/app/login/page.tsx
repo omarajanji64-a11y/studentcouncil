@@ -11,11 +11,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Ticket, Loader2 } from "lucide-react";
+import { Ticket } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 import { firebaseReady } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { PageWrapper } from "@/components/motion/page-wrapper";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -74,7 +76,8 @@ export default function LoginPage() {
   );
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <PageWrapper>
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="mx-auto w-full max-w-sm shadow-xl">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
@@ -122,7 +125,7 @@ export default function LoginPage() {
               </div>
               <Button type="submit" className="w-full" disabled={!!isLoading}>
                 {isLoading === "signin" ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Skeleton className="mr-2 h-4 w-4 rounded-full" />
                 ) : null}
                 Sign In
               </Button>
@@ -143,7 +146,7 @@ export default function LoginPage() {
                 disabled={!!isLoading}
               >
                 {isLoading === "member" ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Skeleton className="mr-2 h-4 w-4 rounded-full" />
                 ) : null}
                 Login as Member
               </Button>
@@ -154,7 +157,7 @@ export default function LoginPage() {
                 disabled={!!isLoading}
               >
                 {isLoading === "supervisor" ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Skeleton className="mr-2 h-4 w-4 rounded-full" />
                 ) : null}
                 Login as Supervisor
               </Button>
@@ -162,6 +165,7 @@ export default function LoginPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </PageWrapper>
   );
 }

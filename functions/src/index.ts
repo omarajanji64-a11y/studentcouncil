@@ -13,6 +13,58 @@ type NotificationDoc = {
   senderRole?: string;
 };
 
+type CreateAuthUserRequest = {
+  email?: string;
+  password?: string;
+  name?: string;
+  role?: "member" | "supervisor";
+};
+
+export const createAuthUser = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "You must be signed in to create users."
+    );
+  }
+
+  const requesterSnap = await db.collection("users").doc(context.auth.uid).get();
+  const requesterRole = requesterSnap.data()?.role;
+  if (requesterRole !== "supervisor") {
+    throw new functions.https.HttpsError(
+      "permission-denied",
+      "Only supervisors can create users."
+    );
+  }
+
+  const payload = (data || {}) as CreateAuthUserRequest;
+  const email = (payload.email || "").trim().toLowerCase();
+  const password = payload.password || "";
+  const name = (payload.name || "").trim();
+  const role = payload.role || "member";
+
+  if (!email || !password) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Email and password are required."
+    );
+  }
+
+  try {
+    const userRecord = await admin.auth().createUser({
+      email,
+      password,
+      displayName: name || undefined,
+    });
+    await admin.auth().setCustomUserClaims(userRecord.uid, { role });
+    return { uid: userRecord.uid };
+  } catch (error: any) {
+    const message =
+      error?.message || "Unable to create a new authentication user.";
+    throw new functions.https.HttpsError("internal", message);
+  }
+});
+
 export const onNotificationCreated = functions.firestore
   .document("notifications/{notificationId}")
   .onCreate(async (snap, context) => {
