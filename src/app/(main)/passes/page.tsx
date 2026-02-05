@@ -21,18 +21,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { File, ListFilter, MoreHorizontal } from "lucide-react";
-import type { Pass } from "@/lib/types";
+import { usePasses, updatePassStatus } from "@/hooks/use-firestore";
 import { format } from "date-fns";
 
-const mockPasses: Pass[] = [
-  { id: 'pass-1', studentName: 'James Holden', reason: 'Forgot lunch', issuedBy: 'Alex Chen', issuedAt: Date.now() - 5 * 60 * 1000, expiresAt: Date.now() + 15 * 60 * 1000, status: 'active' },
-  { id: 'pass-2', studentName: 'Naomi Nagata', reason: 'Meeting with teacher', issuedBy: 'Alex Chen', issuedAt: Date.now() - 2 * 60 * 1000, expiresAt: Date.now() + 18 * 60 * 1000, status: 'active' },
-  { id: 'pass-3', studentName: 'Amos Burton', reason: 'Library book return', issuedBy: 'Dr. Evelyn Reed', issuedAt: Date.now() - 10 * 60 * 1000, expiresAt: Date.now() + 10 * 60 * 1000, status: 'active' },
-  { id: 'pass-4', studentName: 'Alex Kamal', reason: 'Medical appointment', issuedBy: 'Alex Chen', issuedAt: Date.now() - 1 * 60 * 1000, expiresAt: Date.now() + 2 * 60 * 1000, status: 'active' },
-  { id: 'pass-5', studentName: 'Chrisjen Avasarala', reason: 'Tutoring session', issuedBy: 'Dr. Evelyn Reed', issuedAt: Date.now() - 12 * 60 * 1000, expiresAt: Date.now() + 8 * 60 * 1000, status: 'active' },
-];
-
 export default function ActivePassesPage() {
+  const { data: passes, loading } = usePasses();
+  const activePasses = passes.filter((pass) => pass.status === "active");
+
   return (
     <div>
       <PageHeader
@@ -80,7 +75,14 @@ export default function ActivePassesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockPasses.map((pass) => (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    Loading passes...
+                  </TableCell>
+                </TableRow>
+              ) : activePasses.length ? (
+                activePasses.map((pass) => (
                 <TableRow key={pass.id}>
                   <TableCell className="font-medium">{pass.studentName}</TableCell>
                   <TableCell className="hidden lg:table-cell text-muted-foreground">{pass.reason}</TableCell>
@@ -97,12 +99,24 @@ export default function ActivePassesPage() {
                       </DropdownMenuTrigger>
                        <DropdownMenuContent align="end">
                         <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">Revoke Pass</DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                          onClick={() => updatePassStatus(pass.id, "revoked")}
+                        >
+                          Revoke Pass
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    No active passes.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

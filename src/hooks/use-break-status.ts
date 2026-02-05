@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import type { Break } from '@/lib/types';
+import { useState, useEffect } from "react";
+import type { Break } from "@/lib/types";
+import { useBreaks } from "@/hooks/use-firestore";
 
 interface BreakStatus {
   activeBreak: Break | null;
@@ -10,18 +11,8 @@ interface BreakStatus {
   loading: boolean;
 }
 
-const now = Date.now();
-const mockBreaks: Break[] = [
-  {
-    id: 'lunch-1',
-    name: 'Lunch Break',
-    startTime: now - 10 * 60 * 1000, // 10 minutes ago
-    endTime: now + 20 * 60 * 1000,   // 20 minutes from now
-  },
-];
-
-// Mock hook to simulate real-time break status from Firestore
 export const useBreakStatus = (): BreakStatus => {
+  const { data: breaks, loading } = useBreaks();
   const [status, setStatus] = useState<BreakStatus>({
     activeBreak: null,
     timeRemaining: 0,
@@ -30,10 +21,18 @@ export const useBreakStatus = (): BreakStatus => {
   });
 
   useEffect(() => {
+    if (loading) {
+      setStatus((prev) => ({ ...prev, loading: true }));
+      return;
+    }
+
     const checkBreaks = () => {
       const currentTime = Date.now();
-      const currentBreak = mockBreaks.find(b => currentTime >= b.startTime && currentTime < b.endTime) || null;
-      
+      const currentBreak =
+        breaks.find(
+          (b) => currentTime >= b.startTime && currentTime < b.endTime
+        ) || null;
+
       if (currentBreak) {
         setStatus({
           activeBreak: currentBreak,
@@ -55,7 +54,7 @@ export const useBreakStatus = (): BreakStatus => {
     const interval = setInterval(checkBreaks, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [breaks, loading]);
 
   return status;
 };

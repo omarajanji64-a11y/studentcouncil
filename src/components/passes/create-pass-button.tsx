@@ -16,23 +16,53 @@ import { PlusCircle, Loader2 } from "lucide-react";
 import { useBreakStatus } from "@/hooks/use-break-status";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { createPass } from "@/hooks/use-firestore";
+import { useAuth } from "@/hooks/use-auth";
 
 export function CreatePassButton() {
   const { isBreakActive, activeBreak } = useBreakStatus();
   const [isOpen, setIsOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [studentName, setStudentName] = useState("");
+  const [reason, setReason] = useState("");
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleCreatePass = async () => {
+    if (!activeBreak || !user) return;
+    if (!studentName || !reason) {
+      toast({
+        variant: "destructive",
+        title: "Missing fields",
+        description: "Student name and reason are required.",
+      });
+      return;
+    }
+
     setIsCreating(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsCreating(false);
-    setIsOpen(false);
-    toast({
-      title: "Pass Created",
-      description: "A new canteen pass has been successfully issued.",
-    });
+    try {
+      await createPass({
+        studentName,
+        reason,
+        issuedBy: user.name,
+        expiresAt: activeBreak.endTime,
+      });
+      setIsCreating(false);
+      setIsOpen(false);
+      setStudentName("");
+      setReason("");
+      toast({
+        title: "Pass Created",
+        description: "A new canteen pass has been successfully issued.",
+      });
+    } catch (error) {
+      setIsCreating(false);
+      toast({
+        variant: "destructive",
+        title: "Pass Failed",
+        description: "Unable to create the pass in Firestore.",
+      });
+    }
   };
 
   return (
@@ -62,6 +92,8 @@ export function CreatePassButton() {
               placeholder="Name or ID"
               className="col-span-3"
               disabled={!isBreakActive}
+              value={studentName}
+              onChange={(event) => setStudentName(event.target.value)}
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -73,6 +105,8 @@ export function CreatePassButton() {
               placeholder="e.g., Forgot lunch"
               className="col-span-3"
               disabled={!isBreakActive}
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
             />
           </div>
         </div>

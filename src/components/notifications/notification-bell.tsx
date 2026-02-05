@@ -15,31 +15,11 @@ import {
   CardTitle,
 } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
-import type { Notification } from "@/lib/types";
-
-const mockNotifications: Notification[] = [
-  {
-    id: "notif-1",
-    title: "Canteen Closed",
-    message: "The main canteen will be closed for cleaning during the first half of lunch.",
-    createdAt: Date.now() - 2 * 60 * 60 * 1000,
-  },
-  {
-    id: "notif-2",
-    title: "Break Extended",
-    message: "Today's lunch break has been extended by 15 minutes.",
-    createdAt: Date.now() - 24 * 60 * 60 * 1000,
-  },
-  {
-    id: "notif-3",
-    title: "Staff Meeting",
-    message: "All members to attend a brief meeting in the staff room now.",
-    createdAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
-  },
-];
+import { useNotifications } from "@/hooks/use-firestore";
 
 export function NotificationBell() {
-  const unreadCount = 1;
+  const { data: notifications, loading } = useNotifications();
+  const unreadCount = notifications.length;
 
   return (
     <Popover>
@@ -64,7 +44,10 @@ export function NotificationBell() {
           <CardContent className="p-0">
             <ScrollArea className="h-72">
               <div className="flex flex-col gap-4 p-4 pt-0">
-                {mockNotifications.map((notification, index) => (
+                {loading ? (
+                  <p className="text-sm text-muted-foreground">Loading...</p>
+                ) : notifications.length ? (
+                  notifications.map((notification, index) => (
                   <div
                     key={notification.id}
                     className={`flex items-start gap-4 ${
@@ -83,7 +66,12 @@ export function NotificationBell() {
                       </p>
                     </div>
                   </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No notifications yet.
+                  </p>
+                )}
               </div>
             </ScrollArea>
           </CardContent>

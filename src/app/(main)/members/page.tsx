@@ -1,6 +1,4 @@
 "use client";
-
-import { useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,58 +20,34 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import type { User } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useRequireAuth } from "@/hooks/use-auth";
-
-const initialUsers: User[] = [
-  {
-    uid: "sup-123",
-    name: "Dr. Evelyn Reed",
-    email: "e.reed@school.edu",
-    role: "supervisor",
-    avatar: "https://picsum.photos/seed/101/40/40",
-  },
-  {
-    uid: "mem-456",
-    name: "Alex Chen",
-    email: "a.chen@school.edu",
-    role: "member",
-    avatar: "https://picsum.photos/seed/102/40/40",
-  },
-  {
-    uid: "mem-789",
-    name: "Maria Garcia",
-    email: "m.garcia@school.edu",
-    role: "member",
-    avatar: "https://picsum.photos/seed/103/40/40",
-  },
-  {
-    uid: "mem-101",
-    name: "Ben Carter",
-    email: "b.carter@school.edu",
-    role: "member",
-    avatar: "https://picsum.photos/seed/104/40/40",
-  },
-  {
-    uid: "test-user-1",
-    name: "Ihsan Test",
-    email: "test@ihsan.com",
-    role: "supervisor",
-    avatar: "https://picsum.photos/seed/105/40/40",
-  },
-];
+import { removeUser, updateUserRole, useUsers } from "@/hooks/use-firestore";
+import { useToast } from "@/hooks/use-toast";
 
 export default function MembersPage() {
   const { user: currentUser } = useRequireAuth("supervisor");
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  const { data: users, loading } = useUsers();
+  const { toast } = useToast();
 
   const handleRoleChange = (uid: string, newRole: "member" | "supervisor") => {
-    setUsers(users.map((u) => (u.uid === uid ? { ...u, role: newRole } : u)));
+    updateUserRole(uid, newRole).catch(() =>
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: "Could not update the user's role.",
+      })
+    );
   };
 
   const handleRemoveUser = (uid: string) => {
-    setUsers(users.filter((u) => u.uid !== uid));
+    removeUser(uid).catch(() =>
+      toast({
+        variant: "destructive",
+        title: "Remove failed",
+        description: "Could not remove the user.",
+      })
+    );
   };
 
   if (!currentUser) {
@@ -105,7 +79,14 @@ export default function MembersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-24 text-center">
+                    Loading members...
+                  </TableCell>
+                </TableRow>
+              ) : users.length ? (
+                users.map((user) => (
                 <TableRow key={user.uid}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -172,7 +153,14 @@ export default function MembersPage() {
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-24 text-center">
+                    No members found.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

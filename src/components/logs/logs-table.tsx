@@ -22,7 +22,7 @@ import { ChevronDown, File } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { format } from "date-fns";
 
-export function LogsTable({ data }: { data: Log[] }) {
+export function LogsTable({ data, loading }: { data: Log[]; loading?: boolean }) {
   const [filter, setFilter] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState<string[]>([]);
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -46,7 +46,7 @@ export function LogsTable({ data }: { data: Log[] }) {
     return filteredData.slice(startIndex, startIndex + rowsPerPage);
   }, [filteredData, currentPage, rowsPerPage]);
 
-  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / rowsPerPage));
 
   const getStatusBadge = (status: Log["status"]) => {
     switch (status) {
@@ -114,7 +114,13 @@ export function LogsTable({ data }: { data: Log[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedData.length ? (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-24 text-center">
+                  Loading logs...
+                </TableCell>
+              </TableRow>
+            ) : paginatedData.length ? (
               paginatedData.map((log) => (
                 <TableRow key={log.id}>
                   <TableCell className="font-medium">{log.studentName}</TableCell>

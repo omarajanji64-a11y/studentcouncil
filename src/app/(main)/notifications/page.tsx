@@ -8,9 +8,45 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Send } from "lucide-react";
+import { useState } from "react";
+import { createNotification } from "@/hooks/use-firestore";
+import { useToast } from "@/hooks/use-toast";
 
 export default function NotificationsPage() {
   useRequireAuth("supervisor");
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const { toast } = useToast();
+
+  const handleSend = async () => {
+    if (!title || !message) {
+      toast({
+        variant: "destructive",
+        title: "Missing fields",
+        description: "Add a title and message before sending.",
+      });
+      return;
+    }
+    setIsSending(true);
+    try {
+      await createNotification({ title, message });
+      setTitle("");
+      setMessage("");
+      toast({
+        title: "Notification sent",
+        description: "Your announcement is now live.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Send failed",
+        description: "Could not publish the notification.",
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   return (
     <div>
@@ -26,15 +62,25 @@ export default function NotificationsPage() {
         <CardContent className="space-y-4">
             <div className="space-y-2">
                 <Label htmlFor="title">Title</Label>
-                <Input id="title" placeholder="e.g., Canteen Update" />
+                <Input
+                  id="title"
+                  placeholder="e.g., Canteen Update"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                />
             </div>
             <div className="space-y-2">
                 <Label htmlFor="message">Message</Label>
-                <Textarea id="message" placeholder="Enter your announcement here..." />
+                <Textarea
+                  id="message"
+                  placeholder="Enter your announcement here..."
+                  value={message}
+                  onChange={(event) => setMessage(event.target.value)}
+                />
             </div>
         </CardContent>
         <CardFooter>
-            <Button className="ml-auto gap-2">
+            <Button className="ml-auto gap-2" onClick={handleSend} disabled={isSending}>
                 <Send className="h-4 w-4" />
                 Broadcast
             </Button>

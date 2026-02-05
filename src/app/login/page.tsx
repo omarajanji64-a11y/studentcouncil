@@ -13,7 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Ticket, Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { mockLogin } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/use-auth";
+import { firebaseReady } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
@@ -24,32 +25,34 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { toast } = useToast();
+  const { signIn, signInDemo } = useAuth();
 
   const handleDemoLogin = async (role: "member" | "supervisor") => {
     setIsLoading(role);
-    await mockLogin(role);
-    router.push("/dashboard");
+    try {
+      await signInDemo(role);
+      router.push("/dashboard");
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Demo Login Failed",
+        description: "Enable Firebase Auth (anonymous) and try again.",
+      });
+      setIsLoading(null);
+    }
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading("signin");
-    // In a real app, you'd have a proper auth flow.
-    // We'll simulate a login for the test account.
-    if (email === "test@ihsan.com" && password === "admin") {
-      await mockLogin({
-        uid: "test-user-1",
-        name: "Ihsan Test",
-        email: "test@ihsan.com",
-        role: "supervisor",
-        avatar: "https://picsum.photos/seed/105/40/40",
-      });
+    try {
+      await signIn(email, password);
       router.push("/dashboard");
-    } else {
+    } catch (error) {
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: "Invalid email or password.",
+        description: "Check your credentials and Firebase Auth settings.",
       });
       setIsLoading(null);
     }
@@ -85,6 +88,12 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {!firebaseReady && (
+            <div className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+              Firebase is not configured. Add the required `NEXT_PUBLIC_FIREBASE_*`
+              variables to `.env.local`.
+            </div>
+          )}
           <form onSubmit={handleSignIn}>
             <div className="space-y-4">
               <div className="space-y-2">
