@@ -24,7 +24,7 @@ import { MoreHorizontal, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { User } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuth } from "@/hooks/use-auth";
+import { useRequireAuth } from "@/hooks/use-auth";
 
 const initialUsers: User[] = [
   {
@@ -65,7 +65,7 @@ const initialUsers: User[] = [
 ];
 
 export default function MembersPage() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser } = useRequireAuth("supervisor");
   const [users, setUsers] = useState<User[]>(initialUsers);
 
   const handleRoleChange = (uid: string, newRole: "member" | "supervisor") => {
@@ -75,6 +75,10 @@ export default function MembersPage() {
   const handleRemoveUser = (uid: string) => {
     setUsers(users.filter((u) => u.uid !== uid));
   };
+
+  if (!currentUser) {
+    return null;
+  }
 
   return (
     <div>

@@ -1,3 +1,6 @@
+"use client";
+
+import { useRequireAuth } from "@/hooks/use-auth";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Send } from "lucide-react";
 
 export default function NotificationsPage() {
+  useRequireAuth("supervisor");
+
   return (
     <div>
       <PageHeader
