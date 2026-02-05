@@ -14,15 +14,43 @@ import { Label } from "@/components/ui/label";
 import { Ticket, Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { mockLogin } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState<"member" | "supervisor" | null>(null);
+  const [isLoading, setIsLoading] = useState<
+    "member" | "supervisor" | "signin" | null
+  >(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const { toast } = useToast();
 
-  const handleLogin = async (role: "member" | "supervisor") => {
+  const handleDemoLogin = async (role: "member" | "supervisor") => {
     setIsLoading(role);
     await mockLogin(role);
     router.push("/dashboard");
+  };
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading("signin");
+    if (email === "test@ihsan.com" && password === "admin") {
+      await mockLogin({
+        uid: "test-user-1",
+        name: "Ihsan Test",
+        email: "test@ihsan.com",
+        role: "supervisor",
+        avatar: "https://picsum.photos/seed/105/40/40",
+      });
+      router.push("/dashboard");
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: "Invalid email or password.",
+      });
+      setIsLoading(null);
+    }
   };
 
   const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -55,28 +83,44 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="m.anderson@school.edu"
-                required
-              />
+          <form onSubmit={handleSignIn}>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="m.anderson@school.edu"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={!!isLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="********"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={!!isLoading}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={!!isLoading}>
+                {isLoading === "signin" ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Sign In
+              </Button>
+              <Button variant="outline" className="w-full" disabled>
+                <GoogleIcon className="mr-2 h-4 w-4" />
+                Sign in with Google
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required />
-            </div>
-            <Button type="submit" className="w-full" disabled>
-              Sign In
-            </Button>
-            <Button variant="outline" className="w-full" disabled>
-              <GoogleIcon className="mr-2 h-4 w-4" />
-              Sign in with Google
-            </Button>
-          </div>
+          </form>
           <Separator className="my-6" />
           <div className="space-y-2 text-center text-sm text-muted-foreground">
             <p>For demonstration purposes:</p>
@@ -84,10 +128,10 @@ export default function LoginPage() {
               <Button
                 variant="secondary"
                 className="w-full"
-                onClick={() => handleLogin("member")}
+                onClick={() => handleDemoLogin("member")}
                 disabled={!!isLoading}
               >
-                {isLoading === 'member' ? (
+                {isLoading === "member" ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
                 Login as Member
@@ -95,10 +139,10 @@ export default function LoginPage() {
               <Button
                 variant="secondary"
                 className="w-full"
-                onClick={() => handleLogin("supervisor")}
+                onClick={() => handleDemoLogin("supervisor")}
                 disabled={!!isLoading}
               >
-                 {isLoading === 'supervisor' ? (
+                {isLoading === "supervisor" ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
                 Login as Supervisor

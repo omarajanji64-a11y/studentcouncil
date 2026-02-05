@@ -13,21 +13,28 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // In a real app, this would be implemented with Firebase Auth
-const mockLogin = async (role: 'member' | 'supervisor'): Promise<User> => {
+const mockLogin = async (roleOrUser: 'member' | 'supervisor' | User): Promise<User> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const userData = {
-        uid: role === 'supervisor' ? 'sup-123' : 'mem-456',
-        name: role === 'supervisor' ? 'Dr. Evelyn Reed' : 'Alex Chen',
-        email: role === 'supervisor' ? 'e.reed@school.edu' : 'a.chen@school.edu',
-        role: role,
-        avatar: 'https://picsum.photos/seed/100/40/40',
-      };
+      let userData: User;
+      if (typeof roleOrUser === 'string') {
+        userData = {
+          uid: roleOrUser === 'supervisor' ? 'sup-123' : 'mem-456',
+          name: roleOrUser === 'supervisor' ? 'Dr. Evelyn Reed' : 'Alex Chen',
+          email: roleOrUser === 'supervisor' ? 'e.reed@school.edu' : 'a.chen@school.edu',
+          role: roleOrUser,
+          avatar: 'https://picsum.photos/seed/100/40/40',
+        };
+      } else {
+        userData = roleOrUser;
+      }
+      
       localStorage.setItem('canteen-user', JSON.stringify(userData));
       resolve(userData);
     }, 500);
   });
 };
+
 
 const mockLogout = async () => {
     localStorage.removeItem('canteen-user');
