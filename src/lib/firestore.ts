@@ -45,6 +45,7 @@ export const converters = {
         email: data.email ?? "",
         role: data.role ?? "member",
         avatar: data.avatar ?? undefined,
+        notificationsEnabled: data.notificationsEnabled ?? false,
       };
     },
   },
@@ -95,6 +96,9 @@ export const converters = {
         title: data.title ?? "",
         message: data.message ?? "",
         createdAt: toMillis(data.createdAt),
+        senderId: data.senderId ?? undefined,
+        senderName: data.senderName ?? undefined,
+        senderRole: data.senderRole ?? undefined,
       };
     },
   },

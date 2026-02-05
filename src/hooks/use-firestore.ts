@@ -4,17 +4,22 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Timestamp,
   addDoc,
+  arrayUnion,
+  collection,
   deleteDoc,
+  doc,
   onSnapshot,
   orderBy,
   query,
   setDoc,
   updateDoc,
+  writeBatch,
   type DocumentData,
   type Query,
 } from "firebase/firestore";
 import type { Break, Log, Notification, Pass, User } from "@/lib/types";
 import { collections, converters, docRefs, serverCreatedAt } from "@/lib/firestore";
+import { db } from "@/lib/firebase";
 
 type LoadingState<T> = {
   data: T[];
@@ -90,11 +95,12 @@ export const useBreaks = () => {
   return useRealtimeCollection<Break>(q, converters.breakItem.fromFirestore);
 };
 
-export const useNotifications = () => {
+export const useNotifications = (enabled = true) => {
   const q = useMemo(() => {
+    if (!enabled) return null;
     const col = collections.notifications();
     return col ? query(col, orderBy("createdAt", "desc")) : null;
-  }, []);
+  }, [enabled]);
   return useRealtimeCollection<Notification>(
     q,
     converters.notification.fromFirestore
@@ -123,6 +129,24 @@ export const updateUserRole = async (uid: string, role: User["role"]) => {
   await updateDoc(ref, { role, updatedAt: serverCreatedAt() });
 };
 
+export const updateUserNotificationSettings = async (
+  uid: string,
+  enabled: boolean
+) => {
+  const ref = docRefs.user(uid);
+  if (!ref) throw new Error("Firestore not configured");
+  await updateDoc(ref, { notificationsEnabled: enabled, updatedAt: serverCreatedAt() });
+};
+
+export const saveNotificationToken = async (uid: string, token: string) => {
+  const ref = docRefs.user(uid);
+  if (!ref) throw new Error("Firestore not configured");
+  await updateDoc(ref, {
+    notificationTokens: arrayUnion(token),
+    updatedAt: serverCreatedAt(),
+  });
+};
+
 export const removeUser = async (uid: string) => {
   const ref = docRefs.user(uid);
   if (!ref) throw new Error("Firestore not configured");
@@ -130,7 +154,11 @@ export const removeUser = async (uid: string) => {
 };
 
 export const createNotification = async (
-  notification: Omit<Notification, "id" | "createdAt">
+  notification: Omit<Notification, "id" | "createdAt"> & {
+    senderId: string;
+    senderName: string;
+    senderRole: string;
+  }
 ) => {
   const col = collections.notifications();
   if (!col) throw new Error("Firestore not configured");
@@ -182,4 +210,30 @@ export const createBreak = async (breakItem: Omit<Break, "id">) => {
     startTime: Timestamp.fromMillis(breakItem.startTime),
     endTime: Timestamp.fromMillis(breakItem.endTime),
   });
+};
+
+export const useNotificationReads = (uid?: string) => {
+  const q = useMemo(() => {
+    if (!uid) return null;
+    if (!collections.users()) return null;
+    return query(
+      collection(doc(db!, "users", uid), "notification_reads"),
+      orderBy("readAt", "desc")
+    );
+  }, [uid]);
+  return useRealtimeCollection<{ id: string }>(
+    q,
+    (snap: any) => ({ id: snap.id })
+  );
+};
+
+export const markNotificationsRead = async (uid: string, ids: string[]) => {
+  if (!db) throw new Error("Firestore not configured");
+  if (!ids.length) return;
+  const batch = writeBatch(db);
+  ids.forEach((notificationId) => {
+    const ref = doc(db, "users", uid, "notification_reads", notificationId);
+    batch.set(ref, { readAt: serverCreatedAt() }, { merge: true });
+  });
+  await batch.commit();
 };

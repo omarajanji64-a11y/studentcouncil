@@ -4,6 +4,7 @@ export type User = {
   email: string;
   role: 'member' | 'supervisor';
   avatar?: string;
+  notificationsEnabled?: boolean;
 };
 
 export type Break = {
@@ -30,4 +31,7 @@ export type Notification = {
   title: string;
   message: string;
   createdAt: number; // Unix timestamp
+  senderId?: string;
+  senderName?: string;
+  senderRole?: string;
 };

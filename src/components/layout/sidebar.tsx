@@ -110,15 +110,17 @@ export function AppSidebar({ user }: AppSidebarProps) {
         <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-lg"
-                aria-label="Settings"
-              >
-                <Settings className="h-5 w-5" />
-                <span className="sr-only">Settings</span>
-              </Button>
+              <Link href="/settings">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-lg"
+                  aria-label="Settings"
+                >
+                  <Settings className="h-5 w-5" />
+                  <span className="sr-only">Settings</span>
+                </Button>
+              </Link>
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={5}>
               Settings

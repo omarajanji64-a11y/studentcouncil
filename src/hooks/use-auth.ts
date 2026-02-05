@@ -36,6 +36,7 @@ const buildFallbackUser = (fbUser: FirebaseUser, role: User["role"]): User => ({
   email: fbUser.email || "unknown@school.edu",
   role,
   avatar: fbUser.photoURL || "https://picsum.photos/seed/100/40/40",
+  notificationsEnabled: false,
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -76,6 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             email: fallback.email,
             role: fallback.role,
             avatar: fallback.avatar ?? null,
+            notificationsEnabled: fallback.notificationsEnabled ?? false,
           });
           setUser(fallback);
         }
@@ -105,6 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email: `${role}@demo.local`,
       role,
       avatar: "https://picsum.photos/seed/demo/40/40",
+      notificationsEnabled: true,
     };
     await setDoc(
       ref,
@@ -113,6 +116,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         email: demoProfile.email,
         role: demoProfile.role,
         avatar: demoProfile.avatar ?? null,
+        notificationsEnabled: demoProfile.notificationsEnabled ?? false,
       },
       { merge: true }
     );

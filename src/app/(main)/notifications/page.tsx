@@ -11,6 +11,7 @@ import { Send } from "lucide-react";
 import { useState } from "react";
 import { createNotification } from "@/hooks/use-firestore";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function NotificationsPage() {
   useRequireAuth("supervisor");
@@ -18,6 +19,7 @@ export default function NotificationsPage() {
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleSend = async () => {
     if (!title || !message) {
@@ -28,9 +30,23 @@ export default function NotificationsPage() {
       });
       return;
     }
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Not signed in",
+        description: "Please sign in again.",
+      });
+      return;
+    }
     setIsSending(true);
     try {
-      await createNotification({ title, message });
+      await createNotification({
+        title,
+        message,
+        senderId: user.uid,
+        senderName: user.name,
+        senderRole: user.role,
+      });
       setTitle("");
       setMessage("");
       toast({

@@ -9,6 +9,11 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 export const metadata: Metadata = {
   title: 'Canteen Control Center',
   description: 'Internal tool for managing student canteen passes.',
+  appleWebApp: {
+    capable: true,
+    title: "Canteen Control Center",
+    statusBarStyle: "default",
+  },
 };
 
 export default function RootLayout({

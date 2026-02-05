@@ -19,6 +19,7 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=studentcouncil-ce2b5
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=studentcouncil-ce2b5.firebasestorage.app
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=785722329583
 NEXT_PUBLIC_FIREBASE_APP_ID=1:785722329583:web:06eb6084d82c2fbe2b0e1a
+NEXT_PUBLIC_FIREBASE_VAPID_KEY=YOUR_VAPID_KEY
 ```
 
 ## Running
@@ -26,3 +27,13 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:785722329583:web:06eb6084d82c2fbe2b0e1a
 npm install
 npm run dev
 ```
+
+## Push Notifications (FCM)
+1. In Firebase Console, enable Cloud Messaging and generate a Web Push certificate.
+2. Add the VAPID key to `.env.local` as `NEXT_PUBLIC_FIREBASE_VAPID_KEY`.
+3. Deploy functions:
+   - `cd functions`
+   - `npm install`
+   - `npm run deploy`
+
+The `onNotificationCreated` function sends pushes to enabled members (not supervisors and not the sender) and writes delivery logs to `notification_logs`.
