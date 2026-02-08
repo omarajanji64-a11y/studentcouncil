@@ -465,7 +465,11 @@ export const createComplaint = async (
     action: "complaint_created",
     entityType: "complaint",
     entityId: ref.id,
-    details: { title: complaint.title, dutyId: complaint.dutyId ?? null },
+    details: {
+      title: complaint.title,
+      dutyId: complaint.dutyId ?? null,
+      studentId: complaint.studentId,
+    },
   });
   return ref.id;
 };

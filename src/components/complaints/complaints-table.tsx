@@ -105,6 +105,7 @@ export function ComplaintsTable({
         notes,
         handledBy: user.name,
         handledById: user.uid,
+        studentId: activeComplaint.studentId,
       },
       user.uid
     );
