@@ -28,7 +28,8 @@ export function DutyTable() {
   const { toast } = useToast();
   const { data: breaks, loading: breaksLoading } = useBreaks();
   const { data: duties } = useDuties();
-  const { data: users } = useUsers();
+  const allowUserList = isStaff(user) || user?.canEditSchedule;
+  const { data: users } = useUsers(allowUserList);
   const [activeCell, setActiveCell] = useState<EditCell | null>(null);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState(false);
@@ -50,10 +51,10 @@ export function DutyTable() {
     return map;
   }, [duties]);
 
-  const memberMap = useMemo(
-    () => new Map(users.map((member) => [member.uid, member.name])),
-    [users]
-  );
+  const memberMap = useMemo(() => {
+    const list = allowUserList ? users : user ? [user] : [];
+    return new Map(list.map((member) => [member.uid, member.name]));
+  }, [allowUserList, users, user]);
 
   const baseAssignments = useMemo(() => {
     const assignments: Record<string, string[]> = {};
@@ -211,8 +212,8 @@ export function DutyTable() {
                         Loading breaks...
                       </TableCell>
                     </TableRow>
-                  ) : users.length ? (
-                    users.map((member) => (
+                  ) : (allowUserList ? users : user ? [user] : []).length ? (
+                    (allowUserList ? users : user ? [user] : []).map((member) => (
                       <TableRow key={member.uid}>
                         <TableCell className="font-medium">{member.name}</TableCell>
                         {sortedBreaks.map((breakItem) => {
@@ -313,7 +314,7 @@ export function DutyTable() {
         }
       >
         <div className="grid gap-3 py-2">
-          {users.map((member) => (
+          {(allowUserList ? users : user ? [user] : []).map((member) => (
             <label key={member.uid} className="flex items-center gap-2 text-sm">
               <Checkbox
                 checked={selectedMemberIds.includes(member.uid)}
