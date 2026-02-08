@@ -31,5 +31,7 @@ export const firebaseReady = hasRequiredConfig;
 export const firebaseApp = app;
 export const auth = app ? getAuth(app) : null;
 export const db = app ? getFirestore(app) : null;
-export const functions = app ? getFunctions(app) : null;
+const functionsRegion =
+  process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_REGION || "us-central1";
+export const functions = app ? getFunctions(app, functionsRegion) : null;
 export const storage = app ? getStorage(app) : null;

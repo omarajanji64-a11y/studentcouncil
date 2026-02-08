@@ -128,11 +128,18 @@ export default function MembersPage() {
         description: "The member profile was created successfully.",
       });
     } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Could not create the member profile and login.";
       setIsCreating(false);
       toast({
         variant: "destructive",
         title: "Create failed",
-        description: "Could not create the member profile and login.",
+        description:
+          message.includes("CORS") || message.includes("404")
+            ? "User creation failed. Ensure the Cloud Function createAuthUser is deployed and the correct region is set."
+            : message,
       });
     }
   };
