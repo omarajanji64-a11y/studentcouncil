@@ -28,6 +28,7 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<void>;
   signInDemo: (role: "member" | "supervisor" | "admin") => Promise<void>;
   logout: () => Promise<void>;
+  updateDisplayName: (name: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -111,6 +112,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await signInWithEmailAndPassword(auth, email, password);
   };
 
+  const updateDisplayName = async (name: string) => {
+    if (!auth?.currentUser) throw new Error("Firebase Auth not configured");
+    const { updateProfile } = await import("firebase/auth");
+    await updateProfile(auth.currentUser, { displayName: name });
+  };
+
   const signInDemo = async (role: "member" | "supervisor" | "admin") => {
     if (!auth) throw new Error("Firebase Auth not configured");
     const credential = await signInAnonymously(auth);
@@ -157,7 +164,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await signOut(auth);
   };
 
-  const value = { user, loading, signIn, signInDemo, logout };
+  const value = { user, loading, signIn, signInDemo, logout, updateDisplayName };
 
   return React.createElement(AuthContext.Provider, { value }, children);
 };
