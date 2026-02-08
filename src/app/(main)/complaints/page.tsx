@@ -17,6 +17,7 @@ export default function ComplaintsPage() {
   const { data: duties } = useDuties();
   const { data: logs, loading: logsLoading } = useLogs();
   const staffView = isStaff(user);
+  if (!user) return null;
   const visibleComplaints = staffView
     ? complaints
     : complaints.filter((complaint) => complaint.studentId === user?.uid);
