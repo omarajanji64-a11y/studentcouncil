@@ -23,8 +23,16 @@ export function ComplaintForm() {
 
   const activeDuty = useMemo(() => {
     const now = Date.now();
-    return duties.find((duty) => now >= duty.startTime && now < duty.endTime) ?? null;
-  }, [duties]);
+    if (!user) return null;
+    return (
+      duties.find(
+        (duty) =>
+          now >= duty.startTime &&
+          now < duty.endTime &&
+          duty.memberIds?.includes(user.uid)
+      ) ?? null
+    );
+  }, [duties, user]);
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -43,6 +51,7 @@ export function ComplaintForm() {
           studentId: user.uid,
           studentName: user.name,
           dutyId: activeDuty?.id ?? null,
+          dutyLocation: activeDuty?.location ?? null,
           title,
           description,
         },
@@ -145,7 +154,9 @@ export function ComplaintForm() {
         </div>
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>Student ID: {user?.uid ?? "N/A"}</span>
-          <span>Duty: {activeDuty?.title ?? "No active duty"}</span>
+          <span>
+            Duty: {activeDuty?.location ?? activeDuty?.title ?? "No active duty"}
+          </span>
         </div>
         <Button onClick={handleSubmit} disabled={isSubmitting}>
           Submit Complaint

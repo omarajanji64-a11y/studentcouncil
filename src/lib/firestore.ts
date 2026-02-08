@@ -135,6 +135,7 @@ export const converters = {
         studentId: data.studentId ?? "",
         studentName: data.studentName ?? undefined,
         dutyId: data.dutyId ?? null,
+        dutyLocation: data.dutyLocation ?? null,
         title: data.title ?? "",
         description: data.description ?? "",
         timestamp: toMillis(data.timestamp),

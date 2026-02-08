@@ -200,6 +200,7 @@ export function ComplaintsTable({
               <TableHead>Student</TableHead>
               <TableHead>Title</TableHead>
               <TableHead>Duty</TableHead>
+              <TableHead>Location</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Submitted</TableHead>
               <TableHead>Attachments</TableHead>
@@ -210,7 +211,7 @@ export function ComplaintsTable({
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={staffView ? 8 : 6} className="h-24 text-center">
+                <TableCell colSpan={staffView ? 9 : 7} className="h-24 text-center">
                   Loading complaints...
                 </TableCell>
               </TableRow>
@@ -223,6 +224,9 @@ export function ComplaintsTable({
                   <TableCell>{complaint.title}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {complaint.dutyId ? dutyLabel.get(complaint.dutyId) ?? "Unknown" : "N/A"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {complaint.dutyLocation ?? "N/A"}
                   </TableCell>
                   <TableCell>{complaint.status}</TableCell>
                   <TableCell>{format(new Date(complaint.timestamp), "PPp")}</TableCell>
@@ -247,7 +251,7 @@ export function ComplaintsTable({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={staffView ? 8 : 6} className="h-24 text-center">
+                <TableCell colSpan={staffView ? 9 : 7} className="h-24 text-center">
                   No complaints found.
                 </TableCell>
               </TableRow>

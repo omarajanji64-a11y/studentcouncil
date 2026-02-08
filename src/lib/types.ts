@@ -56,6 +56,7 @@ export type Complaint = {
   studentId: string;
   studentName?: string;
   dutyId?: string | null;
+  dutyLocation?: string | null;
   title: string;
   description: string;
   timestamp: number; // Unix timestamp
