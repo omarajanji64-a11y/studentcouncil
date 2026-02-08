@@ -45,8 +45,9 @@ export function DutyScheduleEditor() {
   );
 
   const dutiesByDay = useMemo(() => {
+    const sorted = [...duties].sort((a, b) => a.startTime - b.startTime);
     const map = new Map<string, Duty[]>();
-    duties.forEach((duty) => {
+    sorted.forEach((duty) => {
       const key = buildDateKey(new Date(duty.startTime));
       if (!map.has(key)) map.set(key, []);
       map.set(key, [...(map.get(key) ?? []), duty]);

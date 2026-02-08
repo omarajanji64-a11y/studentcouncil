@@ -112,7 +112,7 @@ export const useNotifications = (enabled = true) => {
 export const useDuties = () => {
   const q = useMemo(() => {
     const col = collections.duties();
-    return col ? query(col, orderBy("startTime", "asc")) : null;
+    return col ? query(col) : null;
   }, []);
   return useRealtimeCollection<Duty>(q, converters.duty.fromFirestore);
 };
@@ -120,7 +120,7 @@ export const useDuties = () => {
 export const useComplaints = () => {
   const q = useMemo(() => {
     const col = collections.complaints();
-    return col ? query(col, orderBy("timestamp", "desc")) : null;
+    return col ? query(col) : null;
   }, []);
   return useRealtimeCollection<Complaint>(q, converters.complaint.fromFirestore);
 };

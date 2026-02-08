@@ -55,7 +55,7 @@ export function ComplaintsTable({
   }, [duties]);
 
   const filtered = useMemo(() => {
-    let filteredData = data;
+    let filteredData = [...data].sort((a, b) => b.timestamp - a.timestamp);
     if (filter) {
       filteredData = filteredData.filter((complaint) =>
         [
