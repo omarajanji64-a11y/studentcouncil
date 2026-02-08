@@ -56,6 +56,11 @@ export function DutyTable() {
     return new Map(list.map((member) => [member.uid, member.name]));
   }, [allowUserList, users, user]);
 
+  const sortedMembers = useMemo(() => {
+    const list = allowUserList ? users : user ? [user] : [];
+    return [...list].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  }, [allowUserList, users, user]);
+
   const baseAssignments = useMemo(() => {
     const assignments: Record<string, string[]> = {};
     dutyLocations.forEach((location) => {
@@ -212,8 +217,8 @@ export function DutyTable() {
                         Loading breaks...
                       </TableCell>
                     </TableRow>
-                  ) : (allowUserList ? users : user ? [user] : []).length ? (
-                    (allowUserList ? users : user ? [user] : []).map((member) => (
+                  ) : sortedMembers.length ? (
+                    sortedMembers.map((member) => (
                       <TableRow key={member.uid}>
                         <TableCell className="font-medium">{member.name}</TableCell>
                         {sortedBreaks.map((breakItem) => {
@@ -314,7 +319,7 @@ export function DutyTable() {
         }
       >
         <div className="grid gap-3 py-2">
-          {(allowUserList ? users : user ? [user] : []).map((member) => (
+          {sortedMembers.map((member) => (
             <label key={member.uid} className="flex items-center gap-2 text-sm">
               <Checkbox
                 checked={selectedMemberIds.includes(member.uid)}

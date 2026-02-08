@@ -47,6 +47,9 @@ import { useState } from "react";
 export default function MembersPage() {
   const { user: currentUser } = useRequireAuth("supervisor");
   const { data: users, loading } = useUsers();
+  const sortedUsers = [...users].sort((a, b) =>
+    (a.name || "").localeCompare(b.name || "")
+  );
   const { toast } = useToast();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -254,8 +257,8 @@ export default function MembersPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : users.length ? (
-                users.map((user) => (
+              ) : sortedUsers.length ? (
+                sortedUsers.map((user) => (
                 <TableRow key={user.uid}>
                   <TableCell>
                     <div className="flex items-center gap-3">

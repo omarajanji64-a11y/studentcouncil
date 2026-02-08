@@ -69,7 +69,7 @@ export const useUsers = (enabled = true) => {
   const q = useMemo(() => {
     if (!enabled) return null;
     const col = collections.users();
-    return col ? query(col, orderBy("name", "asc")) : null;
+    return col ? query(col) : null;
   }, [enabled]);
   return useRealtimeCollection<User>(q, converters.user.fromFirestore);
 };
