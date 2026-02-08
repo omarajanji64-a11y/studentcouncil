@@ -16,6 +16,21 @@ import type { Duty } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
 const dutyLocations = ["Front Counter", "Kitchen", "Dish Station", "Runner"];
+const fallbackMembers = [
+  "Ayhan",
+  "Abdulrazzaq",
+  "Omar",
+  "Yousif yaşar",
+  "Suleyman",
+  "Kenan",
+  "Salah",
+  "Ibrahim",
+  "Homam",
+  "Adam",
+  "Fahad",
+  "Hesham",
+  "Rida",
+];
 
 type EditCell = {
   breakId: string;
@@ -53,11 +68,17 @@ export function DutyTable() {
 
   const memberMap = useMemo(() => {
     const list = allowUserList ? users : user ? [user] : [];
+    if (!list.length) {
+      return new Map(fallbackMembers.map((name) => [name, name]));
+    }
     return new Map(list.map((member) => [member.uid, member.name]));
   }, [allowUserList, users, user]);
 
   const sortedMembers = useMemo(() => {
     const list = allowUserList ? users : user ? [user] : [];
+    if (!list.length) {
+      return fallbackMembers.map((name) => ({ uid: name, name }));
+    }
     return [...list].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   }, [allowUserList, users, user]);
 
