@@ -19,13 +19,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, File } from "lucide-react";
-import { StatusBadge } from "@/components/shared/status-badge";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function LogsTable({ data, loading }: { data: Log[]; loading?: boolean }) {
   const [filter, setFilter] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState<string[]>([]);
+  const [entityFilter, setEntityFilter] = React.useState<string[]>([]);
   const [currentPage, setCurrentPage] = React.useState(1);
   const rowsPerPage = 10;
 
@@ -33,14 +32,17 @@ export function LogsTable({ data, loading }: { data: Log[]; loading?: boolean })
     let filtered = data;
     if (filter) {
       filtered = filtered.filter((log) =>
-        log.studentName.toLowerCase().includes(filter.toLowerCase())
+        [log.action, log.entityType, log.entityId, log.userId]
+          .join(" ")
+          .toLowerCase()
+          .includes(filter.toLowerCase())
       );
     }
-    if (statusFilter.length > 0) {
-        filtered = filtered.filter((log) => statusFilter.includes(log.status));
+    if (entityFilter.length > 0) {
+        filtered = filtered.filter((log) => entityFilter.includes(log.entityType));
     }
     return filtered;
-  }, [data, filter, statusFilter]);
+  }, [data, filter, entityFilter]);
 
   const paginatedData = React.useMemo(() => {
     const startIndex = (currentPage - 1) * rowsPerPage;
@@ -53,7 +55,7 @@ export function LogsTable({ data, loading }: { data: Log[]; loading?: boolean })
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <Input
-          placeholder="Filter by student name..."
+          placeholder="Search action, user, or entity..."
           value={filter}
           onChange={(event) => setFilter(event.target.value)}
           className="max-w-sm"
@@ -62,22 +64,22 @@ export function LogsTable({ data, loading }: { data: Log[]; loading?: boolean })
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="ml-auto">
-                  Status <ChevronDown className="ml-2 h-4 w-4" />
+                  Entity <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {['active', 'expired', 'revoked'].map((status) => (
+                {Array.from(new Set(data.map((log) => log.entityType))).map((entity) => (
                   <DropdownMenuCheckboxItem
-                    key={status}
+                    key={entity}
                     className="capitalize"
-                    checked={statusFilter.includes(status)}
+                    checked={entityFilter.includes(entity)}
                     onCheckedChange={(value) => {
-                        setStatusFilter(current => 
-                            value ? [...current, status] : current.filter(s => s !== status)
+                        setEntityFilter(current => 
+                            value ? [...current, entity] : current.filter(s => s !== entity)
                         )
                     }}
                   >
-                    {status}
+                    {entity}
                   </DropdownMenuCheckboxItem>
                 ))}
               </DropdownMenuContent>
@@ -94,11 +96,11 @@ export function LogsTable({ data, loading }: { data: Log[]; loading?: boolean })
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Student</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead>Issued At</TableHead>
-              <TableHead>Issued By</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Time</TableHead>
+              <TableHead>User</TableHead>
+              <TableHead>Action</TableHead>
+              <TableHead>Entity</TableHead>
+              <TableHead>Details</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -114,12 +116,16 @@ export function LogsTable({ data, loading }: { data: Log[]; loading?: boolean })
             ) : paginatedData.length ? (
               paginatedData.map((log) => (
                 <TableRow key={log.id}>
-                  <TableCell className="font-medium">{log.studentName}</TableCell>
-                  <TableCell>{log.reason}</TableCell>
-                  <TableCell>{format(new Date(log.issuedAt), 'PPp')}</TableCell>
-                  <TableCell>{log.issuedBy}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={log.status} />
+                  <TableCell className="font-medium">
+                    {format(new Date(log.timestamp), "PPp")}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{log.userId}</TableCell>
+                  <TableCell className="capitalize">{log.action.replace(/_/g, " ")}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {log.entityType} {log.entityId ? `• ${log.entityId}` : ""}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {log.details ? JSON.stringify(log.details) : "N/A"}
                   </TableCell>
                 </TableRow>
               ))

@@ -22,14 +22,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState<
-    "member" | "supervisor" | "signin" | null
+    "member" | "supervisor" | "admin" | "signin" | null
   >(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { toast } = useToast();
   const { signIn, signInDemo } = useAuth();
 
-  const handleDemoLogin = async (role: "member" | "supervisor") => {
+  const handleDemoLogin = async (role: "member" | "supervisor" | "admin") => {
     setIsLoading(role);
     try {
       await signInDemo(role);
@@ -160,6 +160,17 @@ export default function LoginPage() {
                   <Skeleton className="mr-2 h-4 w-4 rounded-full" />
                 ) : null}
                 Login as Supervisor
+              </Button>
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => handleDemoLogin("admin")}
+                disabled={!!isLoading}
+              >
+                {isLoading === "admin" ? (
+                  <Skeleton className="mr-2 h-4 w-4 rounded-full" />
+                ) : null}
+                Login as Admin
               </Button>
             </div>
           </div>

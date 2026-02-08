@@ -26,7 +26,7 @@ export default function SettingsPage() {
     try {
       const token = await registerForPushNotifications();
       await saveNotificationToken(user.uid, token);
-      await updateUserNotificationSettings(user.uid, true);
+      await updateUserNotificationSettings(user.uid, true, user.uid);
       toast({
         title: "Notifications enabled",
         description: "You're all set for real-time alerts.",

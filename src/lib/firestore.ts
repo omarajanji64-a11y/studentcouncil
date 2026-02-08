@@ -8,7 +8,7 @@ import {
   type DocumentData,
   type QueryDocumentSnapshot,
 } from "firebase/firestore";
-import type { Break, Log, Notification, Pass, User } from "@/lib/types";
+import type { Break, Complaint, Duty, Log, Notification, Pass, User } from "@/lib/types";
 import { db } from "@/lib/firebase";
 
 export type FirestoreDoc<T> = T & { id: string };
@@ -25,6 +25,8 @@ export const collections = {
   logs: () => (db ? collection(db, "logs") : null),
   breaks: () => (db ? collection(db, "breaks") : null),
   notifications: () => (db ? collection(db, "notifications") : null),
+  duties: () => (db ? collection(db, "duties") : null),
+  complaints: () => (db ? collection(db, "complaints") : null),
 };
 
 export const docRefs = {
@@ -33,6 +35,8 @@ export const docRefs = {
   log: (id: string) => (db ? doc(db, "logs", id) : null),
   break: (id: string) => (db ? doc(db, "breaks", id) : null),
   notification: (id: string) => (db ? doc(db, "notifications", id) : null),
+  duty: (id: string) => (db ? doc(db, "duties", id) : null),
+  complaint: (id: string) => (db ? doc(db, "complaints", id) : null),
 };
 
 export const converters = {
@@ -55,11 +59,16 @@ export const converters = {
       return {
         id: snap.id,
         studentName: data.studentName ?? "",
+        studentId: data.studentId ?? undefined,
         reason: data.reason ?? "",
         issuedBy: data.issuedBy ?? "",
+        issuedById: data.issuedById ?? undefined,
         issuedAt: toMillis(data.issuedAt),
         expiresAt: toMillis(data.expiresAt),
         status: data.status ?? "active",
+        passType: data.passType ?? "active_break",
+        durationMinutes: data.durationMinutes ?? undefined,
+        override: data.override ?? false,
       };
     },
   },
@@ -68,12 +77,12 @@ export const converters = {
       const data = snap.data();
       return {
         id: snap.id,
-        studentName: data.studentName ?? "",
-        reason: data.reason ?? "",
-        issuedBy: data.issuedBy ?? "",
-        issuedAt: toMillis(data.issuedAt),
-        expiresAt: toMillis(data.expiresAt),
-        status: data.status ?? "active",
+        timestamp: toMillis(data.timestamp),
+        userId: data.userId ?? "system",
+        action: data.action ?? "unknown",
+        entityType: data.entityType ?? "unknown",
+        entityId: data.entityId ?? "",
+        details: data.details ?? undefined,
       };
     },
   },
@@ -99,6 +108,37 @@ export const converters = {
         senderId: data.senderId ?? undefined,
         senderName: data.senderName ?? undefined,
         senderRole: data.senderRole ?? undefined,
+      };
+    },
+  },
+  duty: {
+    fromFirestore: (snap: QueryDocumentSnapshot<DocumentData> | any): Duty => {
+      const data = snap.data();
+      return {
+        id: snap.id,
+        title: data.title ?? "",
+        startTime: toMillis(data.startTime),
+        endTime: toMillis(data.endTime),
+        memberIds: data.memberIds ?? [],
+        memberNames: data.memberNames ?? [],
+      };
+    },
+  },
+  complaint: {
+    fromFirestore: (snap: QueryDocumentSnapshot<DocumentData> | any): Complaint => {
+      const data = snap.data();
+      return {
+        id: snap.id,
+        studentId: data.studentId ?? "",
+        studentName: data.studentName ?? undefined,
+        dutyId: data.dutyId ?? null,
+        title: data.title ?? "",
+        description: data.description ?? "",
+        timestamp: toMillis(data.timestamp),
+        status: data.status ?? "Open",
+        handledBy: data.handledBy ?? undefined,
+        handledById: data.handledById ?? undefined,
+        notes: data.notes ?? undefined,
       };
     },
   },

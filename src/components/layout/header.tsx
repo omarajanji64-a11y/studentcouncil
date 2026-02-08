@@ -28,6 +28,8 @@ import {
   CalendarClock,
   ScrollText,
   Send,
+  MessageSquare,
+  BarChart3,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -35,23 +37,27 @@ import { useAuth } from "@/hooks/use-auth";
 import { usePathname, useRouter } from "next/navigation";
 import { CreatePassButton } from "../passes/create-pass-button";
 import { NotificationBell } from "../notifications/notification-bell";
+import { isAdmin, isStaff } from "@/lib/permissions";
+import { OverridePassButton } from "../passes/override-pass-button";
 
 const navLinks = [
   { href: "/dashboard", icon: Home, label: "Dashboard" },
   { href: "/passes", icon: Ticket, label: "Active Passes" },
+  { href: "/complaints", icon: MessageSquare, label: "Complaints" },
   { href: "/logs", icon: ScrollText, label: "Logs" },
+  { href: "/analytics", icon: BarChart3, label: "Analytics", role: "admin" },
   {
     href: "/schedule",
     icon: CalendarClock,
-    label: "Break Scheduler",
-    role: "supervisor",
+    label: "Schedule",
+    role: "staff",
   },
-  { href: "/members", icon: Users, label: "Manage Members", role: "supervisor" },
+  { href: "/members", icon: Users, label: "Manage Members", role: "staff" },
   {
     href: "/notifications",
     icon: Send,
     label: "Send Notification",
-    role: "supervisor",
+    role: "staff",
   },
 ];
 
@@ -89,7 +95,9 @@ export function AppHeader() {
             </Link>
             {navLinks.map(
               (link) =>
-                (!link.role || user?.role === "supervisor") && (
+                (!link.role ||
+                  (link.role === "staff" && isStaff(user)) ||
+                  (link.role === "admin" && isAdmin(user))) && (
                   <Link
                     key={link.href}
                     href={link.href}
@@ -122,6 +130,7 @@ export function AppHeader() {
       </Breadcrumb>
       <div className="relative ml-auto flex items-center gap-4">
         <CreatePassButton />
+        <OverridePassButton />
         <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

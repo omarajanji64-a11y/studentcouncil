@@ -51,12 +51,12 @@ export default function MembersPage() {
   const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [invitePassword, setInvitePassword] = useState("");
-  const [inviteRole, setInviteRole] = useState<"member" | "supervisor">(
+  const [inviteRole, setInviteRole] = useState<"member" | "supervisor" | "admin">(
     "member"
   );
 
-  const handleRoleChange = (uid: string, newRole: "member" | "supervisor") => {
-    updateUserRole(uid, newRole).catch(() =>
+  const handleRoleChange = (uid: string, newRole: "member" | "supervisor" | "admin") => {
+    updateUserRole(uid, newRole, currentUser?.uid).catch(() =>
       toast({
         variant: "destructive",
         title: "Update failed",
@@ -66,7 +66,7 @@ export default function MembersPage() {
   };
 
   const handleRemoveUser = (uid: string) => {
-    removeUser(uid).catch(() =>
+    removeUser(uid, currentUser?.uid).catch(() =>
       toast({
         variant: "destructive",
         title: "Remove failed",
@@ -100,6 +100,7 @@ export default function MembersPage() {
         email: inviteEmail.trim(),
         password: invitePassword.trim(),
         role: inviteRole,
+        actorId: currentUser.uid,
       });
       setIsCreating(false);
       setIsInviteOpen(false);
@@ -197,7 +198,7 @@ export default function MembersPage() {
               </Label>
               <Select
                 value={inviteRole}
-                onValueChange={(value: "member" | "supervisor") =>
+                onValueChange={(value: "member" | "supervisor" | "admin") =>
                   setInviteRole(value)
                 }
                 disabled={isCreating}
@@ -208,6 +209,9 @@ export default function MembersPage() {
                 <SelectContent>
                   <SelectItem value="member">Member</SelectItem>
                   <SelectItem value="supervisor">Supervisor</SelectItem>
+                  {currentUser.role === "admin" ? (
+                    <SelectItem value="admin">Admin</SelectItem>
+                  ) : null}
                 </SelectContent>
               </Select>
             </div>
@@ -258,7 +262,7 @@ export default function MembersPage() {
                   </TableCell>
                   <TableCell>
                     <Badge
-                      variant={user.role === "supervisor" ? "default" : "secondary"}
+                      variant={user.role === "admin" || user.role === "supervisor" ? "default" : "secondary"}
                       className="capitalize"
                     >
                       {user.role}
@@ -280,18 +284,24 @@ export default function MembersPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        {user.role === "member" ? (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              handleRoleChange(user.uid, "supervisor")
-                            }
-                          >
+                        {currentUser?.role === "admin" ? (
+                          <>
+                            <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "member")}>
+                              Set Member
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "supervisor")}>
+                              Set Supervisor
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "admin")}>
+                              Set Admin
+                            </DropdownMenuItem>
+                          </>
+                        ) : user.role === "member" ? (
+                          <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "supervisor")}>
                             Make Supervisor
                           </DropdownMenuItem>
                         ) : (
-                          <DropdownMenuItem
-                            onClick={() => handleRoleChange(user.uid, "member")}
-                          >
+                          <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "member")}>
                             Make Member
                           </DropdownMenuItem>
                         )}

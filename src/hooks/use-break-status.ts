@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Break } from "@/lib/types";
 import { useBreaks } from "@/hooks/use-firestore";
+import { logAction } from "@/lib/logging";
 
 interface BreakStatus {
   activeBreak: Break | null;
@@ -19,6 +20,8 @@ export const useBreakStatus = (): BreakStatus => {
     isBreakActive: false,
     loading: true,
   });
+  const lastBreakId = useRef<string | null>(null);
+  const lastActive = useRef<boolean>(false);
 
   useEffect(() => {
     if (loading) {
@@ -47,6 +50,29 @@ export const useBreakStatus = (): BreakStatus => {
           isBreakActive: false,
           loading: false,
         });
+      }
+
+      if (currentBreak && (!lastActive.current || lastBreakId.current !== currentBreak.id)) {
+        logAction({
+          userId: "system",
+          action: "break_started",
+          entityType: "break",
+          entityId: currentBreak.id,
+          details: { name: currentBreak.name },
+        });
+        lastActive.current = true;
+        lastBreakId.current = currentBreak.id;
+      }
+
+      if (!currentBreak && lastActive.current) {
+        logAction({
+          userId: "system",
+          action: "break_ended",
+          entityType: "break",
+          entityId: lastBreakId.current ?? "",
+        });
+        lastActive.current = false;
+        lastBreakId.current = null;
       }
     };
 

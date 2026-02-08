@@ -11,18 +11,31 @@ import { createPass } from "@/hooks/use-firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { MotionModal } from "@/components/motion/motion-modal";
 import { Skeleton } from "@/components/ui/skeleton";
+import { isStaff } from "@/lib/permissions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function CreatePassButton() {
   const { isBreakActive, activeBreak } = useBreakStatus();
   const [isOpen, setIsOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [studentName, setStudentName] = useState("");
+  const [studentId, setStudentId] = useState("");
   const [reason, setReason] = useState("");
+  const [passType, setPassType] = useState<
+    "active_break" | "time_specified" | "community"
+  >("active_break");
+  const [durationMinutes, setDurationMinutes] = useState("30");
   const { toast } = useToast();
   const { user } = useAuth();
 
   const handleCreatePass = async () => {
-    if (!activeBreak || !user) return;
+    if (!user) return;
     if (!studentName || !reason) {
       toast({
         variant: "destructive",
@@ -32,17 +45,36 @@ export function CreatePassButton() {
       return;
     }
 
+    if (passType === "active_break" && !activeBreak) {
+      toast({
+        variant: "destructive",
+        title: "No active break",
+        description: "Active Break passes require a live break window.",
+      });
+      return;
+    }
+
     setIsCreating(true);
     try {
+      const duration = Number(durationMinutes) || 30;
+      const expiresAt =
+        passType === "active_break" && activeBreak
+          ? activeBreak.endTime
+          : Date.now() + duration * 60 * 1000;
       await createPass({
         studentName,
+        studentId: studentId || undefined,
         reason,
         issuedBy: user.name,
-        expiresAt: activeBreak.endTime,
-      });
+        issuedById: user.uid,
+        expiresAt,
+        passType,
+        durationMinutes: passType === "active_break" ? undefined : duration,
+      }, user.uid);
       setIsCreating(false);
       setIsOpen(false);
       setStudentName("");
+      setStudentId("");
       setReason("");
       toast({
         title: "Pass Created",
@@ -58,6 +90,8 @@ export function CreatePassButton() {
     }
   };
 
+  if (!isStaff(user)) return null;
+
   return (
     <MotionModal
       open={isOpen}
@@ -70,16 +104,18 @@ export function CreatePassButton() {
       }
       title="Issue New Canteen Pass"
       description={
-        isBreakActive
-          ? `This pass will be valid for the rest of the ${activeBreak?.name?.toLowerCase()}.`
-          : "Pass creation is currently disabled as there is no active break."
+        passType === "active_break"
+          ? isBreakActive
+            ? `This pass will be valid for the rest of the ${activeBreak?.name?.toLowerCase()}.`
+            : "Active Break passes require a live break window."
+          : "Configure the duration for this pass type."
       }
       contentClassName="sm:max-w-[425px]"
       footer={
         <Button
           type="submit"
           onClick={handleCreatePass}
-          disabled={!isBreakActive || isCreating}
+          disabled={isCreating}
         >
           {isCreating && <Skeleton className="mr-2 h-4 w-4 rounded-full" />}
           Issue Pass
@@ -88,16 +124,42 @@ export function CreatePassButton() {
     >
       <div className="grid gap-4 py-4">
         <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="pass-type" className="text-right">
+            Type
+          </Label>
+          <Select value={passType} onValueChange={(value) => setPassType(value as any)}>
+            <SelectTrigger id="pass-type" className="col-span-3">
+              <SelectValue placeholder="Select pass type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active_break">Active Break</SelectItem>
+              <SelectItem value="time_specified">Time-Specified</SelectItem>
+              <SelectItem value="community">Community</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
           <Label htmlFor="student" className="text-right">
             Student
           </Label>
           <Input
             id="student"
-            placeholder="Name or ID"
+            placeholder="Name"
             className="col-span-3"
-            disabled={!isBreakActive}
             value={studentName}
             onChange={(event) => setStudentName(event.target.value)}
+          />
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="student-id" className="text-right">
+            Student ID
+          </Label>
+          <Input
+            id="student-id"
+            placeholder="Optional ID"
+            className="col-span-3"
+            value={studentId}
+            onChange={(event) => setStudentId(event.target.value)}
           />
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
@@ -108,11 +170,25 @@ export function CreatePassButton() {
             id="reason"
             placeholder="e.g., Forgot lunch"
             className="col-span-3"
-            disabled={!isBreakActive}
             value={reason}
             onChange={(event) => setReason(event.target.value)}
           />
         </div>
+        {passType !== "active_break" ? (
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="duration" className="text-right">
+              Duration (min)
+            </Label>
+            <Input
+              id="duration"
+              type="number"
+              min={5}
+              className="col-span-3"
+              value={durationMinutes}
+              onChange={(event) => setDurationMinutes(event.target.value)}
+            />
+          </div>
+        ) : null}
       </div>
     </MotionModal>
   );

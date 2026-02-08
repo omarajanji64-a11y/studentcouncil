@@ -8,6 +8,7 @@ import React, {
   createContext,
   useContext,
   ReactNode,
+  useRef,
 } from "react";
 import {
   onAuthStateChanged,
@@ -19,12 +20,13 @@ import {
 import { onSnapshot, setDoc } from "firebase/firestore";
 import { auth, firebaseReady } from "@/lib/firebase";
 import { converters, docRefs } from "@/lib/firestore";
+import { logAction } from "@/lib/logging";
 
 type AuthContextType = {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signInDemo: (role: "member" | "supervisor") => Promise<void>;
+  signInDemo: (role: "member" | "supervisor" | "admin") => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -42,6 +44,7 @@ const buildFallbackUser = (fbUser: FirebaseUser, role: User["role"]): User => ({
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const loggedInRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!auth || !firebaseReady) {
@@ -56,6 +59,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         unsubscribeProfile = null;
         setUser(null);
         setLoading(false);
+        loggedInRef.current = null;
         return;
       }
 
@@ -81,6 +85,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           });
           setUser(fallback);
         }
+        if (loggedInRef.current !== fbUser.uid) {
+          loggedInRef.current = fbUser.uid;
+          await logAction({
+            userId: fbUser.uid,
+            action: "login",
+            entityType: "auth",
+            entityId: fbUser.uid,
+          });
+        }
         setLoading(false);
       });
     });
@@ -96,14 +109,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await signInWithEmailAndPassword(auth, email, password);
   };
 
-  const signInDemo = async (role: "member" | "supervisor") => {
+  const signInDemo = async (role: "member" | "supervisor" | "admin") => {
     if (!auth) throw new Error("Firebase Auth not configured");
     const credential = await signInAnonymously(auth);
     const ref = docRefs.user(credential.user.uid);
     if (!ref) return;
     const demoProfile: User = {
       uid: credential.user.uid,
-      name: role === "supervisor" ? "Demo Supervisor" : "Demo Member",
+      name:
+        role === "admin"
+          ? "Demo Admin"
+          : role === "supervisor"
+          ? "Demo Supervisor"
+          : "Demo Member",
       email: `${role}@demo.local`,
       role,
       avatar: "https://picsum.photos/seed/demo/40/40",
@@ -124,6 +142,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     if (!auth) return;
+    if (user?.uid) {
+      await logAction({
+        userId: user.uid,
+        action: "logout",
+        entityType: "auth",
+        entityId: user.uid,
+      });
+    }
     await signOut(auth);
   };
 
@@ -140,7 +166,7 @@ export const useAuth = () => {
   return context;
 };
 
-export const useRequireAuth = (role?: "member" | "supervisor") => {
+export const useRequireAuth = (role?: "member" | "supervisor" | "admin") => {
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -152,7 +178,8 @@ export const useRequireAuth = (role?: "member" | "supervisor") => {
       user &&
       role &&
       user.role !== role &&
-      user.role !== "supervisor"
+      user.role !== "supervisor" &&
+      user.role !== "admin"
     ) {
       router.push("/dashboard");
     }

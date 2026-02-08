@@ -13,7 +13,8 @@ import {
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { AnimatedList } from "@/components/motion/animated-list";
 import { useAuth } from "@/hooks/use-auth";
-import { Ticket, ScrollText, CalendarClock, Users } from "lucide-react";
+import { Ticket, ScrollText, CalendarClock, Users, MessageSquare, BarChart3 } from "lucide-react";
+import { isAdmin, isStaff } from "@/lib/permissions";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -26,24 +27,37 @@ export default function DashboardPage() {
       description: "View all currently active passes.",
     },
     {
+      href: "/complaints",
+      icon: MessageSquare,
+      title: "Complaints",
+      description: "Submit and track duty-related complaints.",
+    },
+    {
       href: "/logs",
       icon: ScrollText,
-      title: "Pass Logs",
-      description: "Review the history of all issued passes.",
+      title: "Activity Logs",
+      description: "Review activity history and audit trails.",
     },
     {
       href: "/schedule",
       icon: CalendarClock,
-      title: "Break Scheduler",
-      description: "Manage the daily break time schedule.",
-      role: "supervisor",
+      title: "Duty Schedule",
+      description: "Manage duty shifts and break schedules.",
+      role: "staff",
     },
     {
       href: "/members",
       icon: Users,
       title: "Manage Members",
       description: "Add, remove, and manage staff members.",
-      role: "supervisor",
+      role: "staff",
+    },
+    {
+      href: "/analytics",
+      icon: BarChart3,
+      title: "Analytics",
+      description: "Operational overview and trends.",
+      role: "admin",
     },
   ];
 
@@ -67,7 +81,9 @@ export default function DashboardPage() {
           <AnimatedList className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {shortcuts.map(
               (shortcut) =>
-                (!shortcut.role || user?.role === "supervisor") && (
+                (!shortcut.role ||
+                  (shortcut.role === "staff" && isStaff(user)) ||
+                  (shortcut.role === "admin" && isAdmin(user))) && (
                   <Link
                     href={shortcut.href}
                     key={shortcut.href}

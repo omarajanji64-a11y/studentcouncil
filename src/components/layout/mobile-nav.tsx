@@ -9,25 +9,33 @@ import {
   CalendarClock,
   Users,
   Send,
+  MessageSquare,
+  BarChart3,
 } from "lucide-react";
 import type { User } from "@/lib/types";
 import { motion } from "framer-motion";
 import { easing, durations } from "@/lib/animations";
 import { cn } from "@/lib/utils";
+import { isAdmin, isStaff } from "@/lib/permissions";
 
 const navLinks = [
   { href: "/dashboard", icon: Home, label: "Dashboard" },
   { href: "/passes", icon: Ticket, label: "Passes" },
+  { href: "/complaints", icon: MessageSquare, label: "Complaints" },
   { href: "/logs", icon: ScrollText, label: "Logs" },
-  { href: "/schedule", icon: CalendarClock, label: "Schedule", role: "supervisor" },
-  { href: "/members", icon: Users, label: "Members", role: "supervisor" },
-  { href: "/notifications", icon: Send, label: "Notify", role: "supervisor" },
+  { href: "/analytics", icon: BarChart3, label: "Analytics", role: "admin" },
+  { href: "/schedule", icon: CalendarClock, label: "Schedule", role: "staff" },
+  { href: "/members", icon: Users, label: "Members", role: "staff" },
+  { href: "/notifications", icon: Send, label: "Notify", role: "staff" },
 ];
 
 export function MobileNav({ user }: { user: User }) {
   const pathname = usePathname();
   const links = navLinks.filter(
-    (link) => !link.role || user.role === "supervisor"
+    (link) =>
+      !link.role ||
+      (link.role === "staff" && isStaff(user)) ||
+      (link.role === "admin" && isAdmin(user))
   );
 
   return (

@@ -18,11 +18,14 @@ import {
   CalendarClock,
   ScrollText,
   Send,
+  MessageSquare,
+  BarChart3,
 } from "lucide-react";
 import type { User } from "@/lib/types";
 import { useAuth } from "@/hooks/use-auth";
 import { motion } from "framer-motion";
 import { easing, durations } from "@/lib/animations";
+import { isAdmin, isStaff } from "@/lib/permissions";
 
 interface AppSidebarProps {
   user: User;
@@ -31,11 +34,13 @@ interface AppSidebarProps {
 const navLinks = [
   { href: "/dashboard", icon: Home, label: "Dashboard" },
   { href: "/passes", icon: Ticket, label: "Active Passes" },
+  { href: "/complaints", icon: MessageSquare, label: "Complaints" },
   { href: "/logs", icon: ScrollText, label: "Logs" },
+  { href: "/analytics", icon: BarChart3, label: "Analytics", role: "admin" },
 ];
 
 const supervisorLinks = [
-  { href: "/schedule", icon: CalendarClock, label: "Break Scheduler" },
+  { href: "/schedule", icon: CalendarClock, label: "Schedule" },
   { href: "/members", icon: Users, label: "Manage Members" },
   { href: "/notifications", icon: Send, label: "Send Notification" },
 ];
@@ -52,6 +57,12 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
   const renderLink = (link: typeof navLinks[0], isMobile?: boolean) => {
     const isActive = pathname.startsWith(link.href);
+    if (link.role === "staff" && !isStaff(user)) {
+      return null;
+    }
+    if (link.role === "admin" && !isAdmin(user)) {
+      return null;
+    }
     const content = (
       <>
         <link.icon className="h-5 w-5" />
@@ -111,8 +122,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
             <span className="sr-only">Canteen Control Center</span>
           </Link>
           {navLinks.map((link) => renderLink(link))}
-          {user.role === "supervisor" &&
-            supervisorLinks.map((link) => renderLink(link))}
+          {isStaff(user) && supervisorLinks.map((link) => renderLink(link))}
         </nav>
         <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
           <Tooltip>

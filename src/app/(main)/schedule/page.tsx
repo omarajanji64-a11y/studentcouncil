@@ -19,25 +19,31 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MoreHorizontal, PlusCircle } from "lucide-react";
+import { MoreHorizontal, PlusCircle, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Break } from "@/lib/types";
 import { format } from "date-fns";
-import { createBreak, useBreaks } from "@/hooks/use-firestore";
+import { createBreak, deleteBreak, updateBreak, useBreaks } from "@/hooks/use-firestore";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { MotionModal } from "@/components/motion/motion-modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { easing, durations } from "@/lib/animations";
+import { DutyScheduleEditor } from "@/components/schedule/duty-schedule";
+import { useAuth, useRequireAuth } from "@/hooks/use-auth";
 
 export default function SchedulePage() {
+  useRequireAuth("supervisor");
   const { data: breaks, loading } = useBreaks();
   const [isOpen, setIsOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [activeBreakId, setActiveBreakId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const isBreakActive = (b: Break) => {
     const now = Date.now();
@@ -67,7 +73,7 @@ export default function SchedulePage() {
       name,
       startTime: start.getTime(),
       endTime: end.getTime(),
-    });
+    }, user?.uid);
 
     setIsOpen(false);
     setName("");
@@ -79,15 +85,63 @@ export default function SchedulePage() {
     });
   };
 
+  const openEdit = (breakItem: Break) => {
+    setActiveBreakId(breakItem.id);
+    setName(breakItem.name);
+    setStartTime(format(new Date(breakItem.startTime), "HH:mm"));
+    setEndTime(format(new Date(breakItem.endTime), "HH:mm"));
+    setEditOpen(true);
+  };
+
+  const handleUpdateBreak = async () => {
+    if (!activeBreakId) return;
+    const today = new Date();
+    const [startHour, startMinute] = startTime.split(":").map(Number);
+    const [endHour, endMinute] = endTime.split(":").map(Number);
+    const start = new Date(today);
+    start.setHours(startHour, startMinute, 0, 0);
+    const end = new Date(today);
+    end.setHours(endHour, endMinute, 0, 0);
+    await updateBreak(
+      activeBreakId,
+      { name, startTime: start.getTime(), endTime: end.getTime() },
+      user?.uid
+    );
+    setEditOpen(false);
+    setActiveBreakId(null);
+    setName("");
+    setStartTime("");
+    setEndTime("");
+    toast({
+      title: "Break updated",
+      description: "The break window has been updated.",
+    });
+  };
+
+  const handleDeleteBreak = async (breakId: string) => {
+    await deleteBreak(breakId, user?.uid);
+    toast({
+      title: "Break deleted",
+      description: "The break has been removed.",
+    });
+  };
+
   return (
     <div>
       <PageHeader
-        title="Break Scheduler"
-        description="Manage daily break times for pass issuing."
+        title="Schedule"
+        description="Manage duty shifts and break windows."
       >
         <MotionModal
           open={isOpen}
-          onOpenChange={setIsOpen}
+          onOpenChange={(open) => {
+            setIsOpen(open);
+            if (open) {
+              setName("");
+              setStartTime("");
+              setEndTime("");
+            }
+          }}
           trigger={
             <Button size="sm" className="gap-1">
               <PlusCircle className="h-4 w-4" />
@@ -130,6 +184,9 @@ export default function SchedulePage() {
           </div>
         </MotionModal>
       </PageHeader>
+      <div className="mb-6">
+        <DutyScheduleEditor />
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>Scheduled Breaks</CardTitle>
@@ -189,10 +246,22 @@ export default function SchedulePage() {
                     </motion.div>
                   </TableCell>
                   <TableCell>
-                    <Button aria-haspopup="true" size="icon" variant="ghost">
-                      <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Toggle menu</span>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button aria-haspopup="true" size="icon" variant="ghost" onClick={() => openEdit(breakItem)}>
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Edit break</span>
+                      </Button>
+                      <Button
+                        aria-haspopup="true"
+                        size="icon"
+                        variant="ghost"
+                        className="text-destructive"
+                        onClick={() => handleDeleteBreak(breakItem.id)}
+                      >
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Delete break</span>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
                 ))
@@ -207,6 +276,45 @@ export default function SchedulePage() {
           </Table>
         </CardContent>
       </Card>
+
+      <MotionModal
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        title="Edit Break"
+        description="Update the break name and time window."
+        contentClassName="sm:max-w-[425px]"
+        footer={<Button onClick={handleUpdateBreak}>Save Changes</Button>}
+      >
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="break-name-edit">Name</Label>
+            <Input
+              id="break-name-edit"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="e.g., Lunch"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="break-start-edit">Start Time</Label>
+            <Input
+              id="break-start-edit"
+              type="time"
+              value={startTime}
+              onChange={(event) => setStartTime(event.target.value)}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="break-end-edit">End Time</Label>
+            <Input
+              id="break-end-edit"
+              type="time"
+              value={endTime}
+              onChange={(event) => setEndTime(event.target.value)}
+            />
+          </div>
+        </div>
+      </MotionModal>
     </div>
   );
 }

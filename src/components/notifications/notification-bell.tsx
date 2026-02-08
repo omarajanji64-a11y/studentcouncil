@@ -44,7 +44,8 @@ export function NotificationBell() {
     if (nextOpen && user && notificationsEnabled && unreadNotifications.length) {
       markNotificationsRead(
         user.uid,
-        unreadNotifications.map((notification) => notification.id)
+        unreadNotifications.map((notification) => notification.id),
+        user.uid
       ).catch(() => {
         // Ignore read tracking failures for now.
       });
