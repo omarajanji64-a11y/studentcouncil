@@ -39,6 +39,7 @@ const buildFallbackUser = (fbUser: FirebaseUser, role: User["role"]): User => ({
   role,
   avatar: fbUser.photoURL || "https://picsum.photos/seed/100/40/40",
   notificationsEnabled: false,
+  canEditSchedule: role !== "member",
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -82,6 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             role: fallback.role,
             avatar: fallback.avatar ?? null,
             notificationsEnabled: fallback.notificationsEnabled ?? false,
+            canEditSchedule: fallback.canEditSchedule ?? false,
           });
           setUser(fallback);
         }
@@ -126,6 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       role,
       avatar: "https://picsum.photos/seed/demo/40/40",
       notificationsEnabled: true,
+      canEditSchedule: role !== "member",
     };
     await setDoc(
       ref,
@@ -135,6 +138,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role: demoProfile.role,
         avatar: demoProfile.avatar ?? null,
         notificationsEnabled: demoProfile.notificationsEnabled ?? false,
+        canEditSchedule: demoProfile.canEditSchedule ?? false,
       },
       { merge: true }
     );

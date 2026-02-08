@@ -5,6 +5,7 @@ export type User = {
   role: 'member' | 'supervisor' | 'admin';
   avatar?: string;
   notificationsEnabled?: boolean;
+  canEditSchedule?: boolean;
 };
 
 export type Break = {
@@ -46,6 +47,8 @@ export type Duty = {
   endTime: number; // Unix timestamp
   memberIds: string[];
   memberNames?: string[];
+  breakId?: string;
+  location?: string;
 };
 
 export type Complaint = {

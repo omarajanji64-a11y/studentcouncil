@@ -30,7 +30,7 @@ import { MotionModal } from "@/components/motion/motion-modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { easing, durations } from "@/lib/animations";
-import { DutyScheduleEditor } from "@/components/schedule/duty-schedule";
+import { DutyTable } from "@/components/schedule/duty-table";
 import { useAuth, useRequireAuth } from "@/hooks/use-auth";
 
 export default function SchedulePage() {
@@ -186,7 +186,7 @@ export default function SchedulePage() {
         </MotionModal>
       </PageHeader>
       <div className="mb-6">
-        <DutyScheduleEditor />
+        <DutyTable />
       </div>
       <Card>
         <CardHeader>

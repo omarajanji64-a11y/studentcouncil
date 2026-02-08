@@ -136,6 +136,7 @@ export const upsertUserProfile = async (user: User) => {
       role: user.role,
       avatar: user.avatar ?? null,
       updatedAt: serverCreatedAt(),
+      canEditSchedule: user.canEditSchedule ?? false,
     },
     { merge: true }
   );
@@ -179,6 +180,23 @@ export const updateUserNotificationSettings = async (
     entityType: "user",
     entityId: uid,
     details: { enabled },
+  });
+};
+
+export const updateUserScheduleEditor = async (
+  uid: string,
+  canEditSchedule: boolean,
+  actorId?: string
+) => {
+  const ref = docRefs.user(uid);
+  if (!ref) throw new Error("Firestore not configured");
+  await updateDoc(ref, { canEditSchedule, updatedAt: serverCreatedAt() });
+  await logAction({
+    userId: actorId ?? "system",
+    action: "schedule_editor_updated",
+    entityType: "user",
+    entityId: uid,
+    details: { canEditSchedule },
   });
 };
 
@@ -242,8 +260,9 @@ export const createUser = async (profile: {
     role: profile.role ?? "member",
     avatar: null,
     notificationsEnabled: false,
-      updatedAt: serverCreatedAt(),
-    });
+    canEditSchedule: false,
+    updatedAt: serverCreatedAt(),
+  });
   await logAction({
     userId: profile.actorId ?? "system",
     action: "user_created",

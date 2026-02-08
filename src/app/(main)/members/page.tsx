@@ -31,10 +31,12 @@ import { MoreHorizontal, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { useRequireAuth } from "@/hooks/use-auth";
 import {
   createUser,
   removeUser,
+  updateUserScheduleEditor,
   updateUserRole,
   useUsers,
 } from "@/hooks/use-firestore";
@@ -71,6 +73,16 @@ export default function MembersPage() {
         variant: "destructive",
         title: "Remove failed",
         description: "Could not remove the user.",
+      })
+    );
+  };
+
+  const handleScheduleEditorToggle = (uid: string, enabled: boolean) => {
+    updateUserScheduleEditor(uid, enabled, currentUser?.uid).catch(() =>
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: "Could not update schedule editor access.",
       })
     );
   };
@@ -226,6 +238,7 @@ export default function MembersPage() {
                 <TableHead>Name</TableHead>
                 <TableHead className="hidden sm:table-cell">Email</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Schedule Editor</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -234,7 +247,7 @@ export default function MembersPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
+                  <TableCell colSpan={5} className="h-24 text-center">
                     <div className="space-y-3">
                       <Skeleton className="h-4 w-2/3 mx-auto" />
                       <Skeleton className="h-4 w-1/2 mx-auto" />
@@ -267,6 +280,13 @@ export default function MembersPage() {
                     >
                       {user.role}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={user.canEditSchedule ?? false}
+                      onCheckedChange={(value) => handleScheduleEditorToggle(user.uid, value)}
+                      disabled={user.uid === currentUser?.uid}
+                    />
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -318,7 +338,7 @@ export default function MembersPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
+                  <TableCell colSpan={5} className="h-24 text-center">
                     No members found.
                   </TableCell>
                 </TableRow>

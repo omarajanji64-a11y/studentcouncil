@@ -7,3 +7,6 @@ export const isAdmin = (user?: User | null) => user?.role === "admin";
 
 export const isStaff = (user?: User | null) =>
   user?.role === "supervisor" || user?.role === "admin";
+
+export const canEditSchedule = (user?: User | null) =>
+  isStaff(user) || user?.canEditSchedule;

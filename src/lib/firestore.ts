@@ -50,6 +50,7 @@ export const converters = {
         role: data.role ?? "member",
         avatar: data.avatar ?? undefined,
         notificationsEnabled: data.notificationsEnabled ?? false,
+        canEditSchedule: data.canEditSchedule ?? false,
       };
     },
   },
@@ -121,6 +122,8 @@ export const converters = {
         endTime: toMillis(data.endTime),
         memberIds: data.memberIds ?? [],
         memberNames: data.memberNames ?? [],
+        breakId: data.breakId ?? undefined,
+        location: data.location ?? undefined,
       };
     },
   },
