@@ -36,6 +36,7 @@ import { useAuth, useRequireAuth } from "@/hooks/use-auth";
 export default function SchedulePage() {
   useRequireAuth("supervisor");
   const { data: breaks, loading } = useBreaks();
+  const sortedBreaks = [...breaks].sort((a, b) => a.startTime - b.startTime);
   const [isOpen, setIsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [activeBreakId, setActiveBreakId] = useState<string | null>(null);
@@ -217,8 +218,8 @@ export default function SchedulePage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : breaks.length ? (
-                breaks.map((breakItem) => (
+              ) : sortedBreaks.length ? (
+                sortedBreaks.map((breakItem) => (
                 <TableRow key={breakItem.id}>
                   <TableCell className="font-medium">{breakItem.name}</TableCell>
                   <TableCell>{format(new Date(breakItem.startTime), 'p')}</TableCell>

@@ -92,7 +92,7 @@ export const useLogs = () => {
 export const useBreaks = () => {
   const q = useMemo(() => {
     const col = collections.breaks();
-    return col ? query(col, orderBy("startTime", "asc")) : null;
+    return col ? query(col) : null;
   }, []);
   return useRealtimeCollection<Break>(q, converters.breakItem.fromFirestore);
 };

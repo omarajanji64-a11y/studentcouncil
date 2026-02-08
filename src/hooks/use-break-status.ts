@@ -31,8 +31,9 @@ export const useBreakStatus = (): BreakStatus => {
 
     const checkBreaks = () => {
       const currentTime = Date.now();
+      const orderedBreaks = [...breaks].sort((a, b) => a.startTime - b.startTime);
       const currentBreak =
-        breaks.find(
+        orderedBreaks.find(
           (b) => currentTime >= b.startTime && currentTime < b.endTime
         ) || null;
 
