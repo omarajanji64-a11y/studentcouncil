@@ -136,10 +136,7 @@ export default function MembersPage() {
       toast({
         variant: "destructive",
         title: "Create failed",
-        description:
-          message.includes("CORS") || message.includes("404")
-            ? "User creation failed. Ensure the Cloud Function createAuthUser is deployed and the correct region is set."
-            : message,
+        description: message,
       });
     }
   };

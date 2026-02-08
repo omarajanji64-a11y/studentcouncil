@@ -17,10 +17,9 @@ import {
   type DocumentData,
   type Query,
 } from "firebase/firestore";
-import { httpsCallable } from "firebase/functions";
 import type { Break, Complaint, Duty, Log, Notification, Pass, User } from "@/lib/types";
 import { collections, converters, docRefs, serverCreatedAt } from "@/lib/firestore";
-import { db, functions } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { logAction } from "@/lib/logging";
 
 type LoadingState<T> = {
@@ -235,23 +234,27 @@ export const createUser = async (profile: {
   password: string;
   actorId?: string;
 }) => {
-  if (!functions) throw new Error("Firebase Functions not configured");
-  const callable = httpsCallable<
-    {
-      email: string;
-      password: string;
-      name: string;
-      role: User["role"];
+  if (!auth?.currentUser) throw new Error("Firebase Auth not configured");
+  const token = await auth.currentUser.getIdToken();
+  const response = await fetch("/api/admin/create-user", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
-    { uid: string }
-  >(functions, "createAuthUser");
-  const result = await callable({
-    email: profile.email,
-    password: profile.password,
-    name: profile.name,
-    role: profile.role ?? "member",
+    body: JSON.stringify({
+      email: profile.email,
+      password: profile.password,
+      name: profile.name,
+      role: profile.role ?? "member",
+    }),
   });
-  const uid = result.data?.uid;
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data?.error || "Could not create auth user.");
+  }
+  const data = await response.json().catch(() => ({}));
+  const uid = data?.uid;
   if (!uid) throw new Error("Could not create auth user.");
   const ref = docRefs.user(uid);
   if (!ref) throw new Error("Firestore not configured");
