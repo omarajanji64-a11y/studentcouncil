@@ -256,17 +256,6 @@ export const createUser = async (profile: {
   const data = await response.json().catch(() => ({}));
   const uid = data?.uid;
   if (!uid) throw new Error("Could not create auth user.");
-  const ref = docRefs.user(uid);
-  if (!ref) throw new Error("Firestore not configured");
-  await setDoc(ref, {
-    name: profile.name,
-    email: profile.email,
-    role: profile.role ?? "member",
-    avatar: null,
-    notificationsEnabled: false,
-    canEditSchedule: false,
-    updatedAt: serverCreatedAt(),
-  });
   await logAction({
     userId: profile.actorId ?? "system",
     action: "user_created",
