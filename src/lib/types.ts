@@ -63,6 +63,14 @@ export type Complaint = {
   handledBy?: string;
   handledById?: string;
   notes?: string;
+  attachments?: {
+    url: string;
+    path: string;
+    uploadedBy: string;
+    createdAt: number;
+    contentType?: string;
+    size?: number;
+  }[];
 };
 
 export type Notification = {

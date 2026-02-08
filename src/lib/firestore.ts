@@ -142,6 +142,7 @@ export const converters = {
         handledBy: data.handledBy ?? undefined,
         handledById: data.handledById ?? undefined,
         notes: data.notes ?? undefined,
+        attachments: data.attachments ?? [],
       };
     },
   },

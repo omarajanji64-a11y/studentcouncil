@@ -47,6 +47,7 @@ export function ComplaintsTable({
   const [activeComplaint, setActiveComplaint] = useState<Complaint | null>(null);
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<Complaint["status"]>("Open");
+  const [gallery, setGallery] = useState<Complaint | null>(null);
 
   const dutyLabel = useMemo(() => {
     const map = new Map<string, string>();
@@ -201,6 +202,7 @@ export function ComplaintsTable({
               <TableHead>Duty</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Submitted</TableHead>
+              <TableHead>Attachments</TableHead>
               {staffView ? <TableHead>Handled By</TableHead> : null}
               {staffView ? <TableHead>Actions</TableHead> : null}
             </TableRow>
@@ -208,7 +210,7 @@ export function ComplaintsTable({
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={staffView ? 7 : 5} className="h-24 text-center">
+                <TableCell colSpan={staffView ? 8 : 6} className="h-24 text-center">
                   Loading complaints...
                 </TableCell>
               </TableRow>
@@ -224,6 +226,15 @@ export function ComplaintsTable({
                   </TableCell>
                   <TableCell>{complaint.status}</TableCell>
                   <TableCell>{format(new Date(complaint.timestamp), "PPp")}</TableCell>
+                  <TableCell>
+                    {complaint.attachments?.length ? (
+                      <Button size="sm" variant="outline" onClick={() => setGallery(complaint)}>
+                        View ({complaint.attachments.length})
+                      </Button>
+                    ) : (
+                      "None"
+                    )}
+                  </TableCell>
                   {staffView ? <TableCell>{complaint.handledBy ?? "N/A"}</TableCell> : null}
                   {staffView ? (
                     <TableCell>
@@ -236,7 +247,7 @@ export function ComplaintsTable({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={staffView ? 7 : 5} className="h-24 text-center">
+                <TableCell colSpan={staffView ? 8 : 6} className="h-24 text-center">
                   No complaints found.
                 </TableCell>
               </TableRow>
@@ -279,6 +290,34 @@ export function ComplaintsTable({
               placeholder="Add notes for resolution..."
             />
           </div>
+        </div>
+      </MotionModal>
+
+      <MotionModal
+        open={!!gallery}
+        onOpenChange={(open) => !open && setGallery(null)}
+        title="Complaint Photos"
+        description="Attached images from the complaint."
+        contentClassName="sm:max-w-[720px]"
+        footer={<Button onClick={() => setGallery(null)}>Close</Button>}
+      >
+        <div className="grid gap-3 py-2 sm:grid-cols-2">
+          {gallery?.attachments?.length ? (
+            gallery.attachments.map((attachment) => (
+              <div key={attachment.url} className="rounded-md border bg-muted/20 p-2">
+                <img
+                  src={attachment.url}
+                  alt="Complaint attachment"
+                  className="h-48 w-full rounded-md object-cover"
+                />
+                <div className="mt-2 text-xs text-muted-foreground">
+                  {attachment.contentType ?? "image"}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-sm text-muted-foreground">No attachments.</div>
+          )}
         </div>
       </MotionModal>
     </div>
