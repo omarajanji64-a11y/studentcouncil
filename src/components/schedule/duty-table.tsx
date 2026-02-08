@@ -10,7 +10,7 @@ import { MotionModal } from "@/components/motion/motion-modal";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
-import { useBreaks, useDuties, useUsers, createDuty, updateDuty } from "@/hooks/use-firestore";
+import { useBreaks, useDuties, useUsers, createDuty, updateDuty, deleteDuty } from "@/hooks/use-firestore";
 import { canEditSchedule, isStaff } from "@/lib/permissions";
 import type { Duty } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +31,9 @@ export function DutyTable() {
   const { data: users } = useUsers();
   const [activeCell, setActiveCell] = useState<EditCell | null>(null);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [draftAssignments, setDraftAssignments] = useState<Record<string, string[]>>({});
 
   const canEdit = canEditSchedule(user);
   const sortedBreaks = useMemo(
@@ -52,59 +55,130 @@ export function DutyTable() {
     [users]
   );
 
+  const baseAssignments = useMemo(() => {
+    const assignments: Record<string, string[]> = {};
+    dutyLocations.forEach((location) => {
+      sortedBreaks.forEach((breakItem) => {
+        const duty = dutyMap.get(`${breakItem.id}:${location}`);
+        assignments[`${breakItem.id}:${location}`] = duty?.memberIds ?? [];
+      });
+    });
+    return assignments;
+  }, [dutyMap, sortedBreaks]);
+
   const openEditor = (breakId: string, location: string) => {
     if (!canEdit) return;
-    const duty = dutyMap.get(`${breakId}:${location}`);
-    setSelectedMemberIds(duty?.memberIds ?? []);
-    setActiveCell({ breakId, location, duty });
+    const key = `${breakId}:${location}`;
+    setSelectedMemberIds(draftAssignments[key] ?? []);
+    setActiveCell({ breakId, location, duty: dutyMap.get(key) });
   };
 
   const saveAssignment = async () => {
-    if (!activeCell || !user) return;
-    const breakItem = breaks.find((b) => b.id === activeCell.breakId);
-    if (!breakItem) return;
-    const memberNames = selectedMemberIds.map((id) => memberMap.get(id) ?? id);
-
-    if (activeCell.duty) {
-      await updateDuty(
-        activeCell.duty.id,
-        {
-          memberIds: selectedMemberIds,
-          memberNames,
-        },
-        user.uid
-      );
-    } else {
-      await createDuty(
-        {
-          title: `${activeCell.location} - ${breakItem.name}`,
-          startTime: breakItem.startTime,
-          endTime: breakItem.endTime,
-          memberIds: selectedMemberIds,
-          memberNames,
-          breakId: breakItem.id,
-          location: activeCell.location,
-        },
-        user.uid
-      );
-    }
-
-    toast({
-      title: "Schedule updated",
-      description: "Duty assignment has been saved.",
-    });
+    if (!activeCell) return;
+    const key = `${activeCell.breakId}:${activeCell.location}`;
+    setDraftAssignments((prev) => ({
+      ...prev,
+      [key]: selectedMemberIds,
+    }));
     setActiveCell(null);
+  };
+
+  const startEditing = () => {
+    if (!canEdit) return;
+    setDraftAssignments(baseAssignments);
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setIsEditing(false);
+    setDraftAssignments({});
+  };
+
+  const saveAll = async () => {
+    if (!user) return;
+    setIsSaving(true);
+    try {
+      const tasks: Promise<any>[] = [];
+      dutyLocations.forEach((location) => {
+        sortedBreaks.forEach((breakItem) => {
+          const key = `${breakItem.id}:${location}`;
+          const existing = dutyMap.get(key);
+          const nextMembers = draftAssignments[key] ?? [];
+          const nextNames = nextMembers.map((id) => memberMap.get(id) ?? id);
+          if (existing && nextMembers.length === 0) {
+            tasks.push(deleteDuty(existing.id, user.uid));
+            return;
+          }
+          if (existing && JSON.stringify(existing.memberIds) !== JSON.stringify(nextMembers)) {
+            tasks.push(updateDuty(existing.id, { memberIds: nextMembers, memberNames: nextNames }, user.uid));
+            return;
+          }
+          if (!existing && nextMembers.length > 0) {
+            tasks.push(
+              createDuty(
+                {
+                  title: `${location} - ${breakItem.name}`,
+                  startTime: breakItem.startTime,
+                  endTime: breakItem.endTime,
+                  memberIds: nextMembers,
+                  memberNames: nextNames,
+                  breakId: breakItem.id,
+                  location,
+                },
+                user.uid
+              )
+            );
+          }
+        });
+      });
+
+      await Promise.all(tasks);
+      toast({
+        title: "Schedule saved",
+        description: "All duty assignments have been updated.",
+      });
+      setIsEditing(false);
+      setDraftAssignments({});
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Save failed",
+        description: "Could not save schedule changes.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Duty Schedule</CardTitle>
-        <CardDescription>
-          {isStaff(user)
-            ? "Supervisor view shows locations by break."
-            : "Member view shows your assignments by break."}
-        </CardDescription>
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <CardTitle>Duty Schedule</CardTitle>
+          <CardDescription>
+            {isStaff(user)
+              ? "Supervisor view shows locations by break."
+              : "Member view shows your assignments by break."}
+          </CardDescription>
+        </div>
+        {canEdit ? (
+          <div className="flex items-center gap-2">
+            {!isEditing ? (
+              <Button size="sm" onClick={startEditing}>
+                Edit Schedule
+              </Button>
+            ) : (
+              <>
+                <Button size="sm" variant="outline" onClick={cancelEditing}>
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={saveAll} disabled={isSaving}>
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </Button>
+              </>
+            )}
+          </div>
+        ) : null}
       </CardHeader>
       <CardContent className="space-y-4">
         <Tabs defaultValue={isStaff(user) ? "supervisor" : "member"}>
@@ -195,16 +269,22 @@ export function DutyTable() {
                       <TableCell className="font-medium">{location}</TableCell>
                       {sortedBreaks.map((breakItem) => {
                         const duty = dutyMap.get(`${breakItem.id}:${location}`);
+                        const draftKey = `${breakItem.id}:${location}`;
+                        const draftNames = (draftAssignments[draftKey] ?? [])
+                          .map((id) => memberMap.get(id) ?? id)
+                          .join(", ");
                         return (
                           <TableCell key={`${location}:${breakItem.id}`}>
                             <Button
                               variant="ghost"
                               size="sm"
                               className="h-auto whitespace-normal text-left"
-                              disabled={!canEdit}
+                              disabled={!canEdit || !isEditing}
                               onClick={() => openEditor(breakItem.id, location)}
                             >
-                              {duty?.memberNames?.length
+                              {isEditing
+                                ? draftNames || "Assign"
+                                : duty?.memberNames?.length
                                 ? duty.memberNames.join(", ")
                                 : "Assign"}
                             </Button>

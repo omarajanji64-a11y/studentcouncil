@@ -43,7 +43,6 @@ export default function DashboardPage() {
       icon: CalendarClock,
       title: "Duty Schedule",
       description: "Manage duty shifts and break schedules.",
-      role: "staff",
     },
     {
       href: "/members",

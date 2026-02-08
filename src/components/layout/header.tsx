@@ -50,7 +50,6 @@ const navLinks = [
     href: "/schedule",
     icon: CalendarClock,
     label: "Schedule",
-    role: "staff",
   },
   { href: "/members", icon: Users, label: "Manage Members", role: "staff" },
   {

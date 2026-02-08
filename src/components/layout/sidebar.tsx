@@ -40,7 +40,6 @@ const navLinks = [
 ];
 
 const supervisorLinks = [
-  { href: "/schedule", icon: CalendarClock, label: "Schedule" },
   { href: "/members", icon: Users, label: "Manage Members" },
   { href: "/notifications", icon: Send, label: "Send Notification" },
 ];
@@ -122,6 +121,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
             <span className="sr-only">Canteen Control Center</span>
           </Link>
           {navLinks.map((link) => renderLink(link))}
+          {renderLink({ href: "/schedule", icon: CalendarClock, label: "Schedule" })}
           {isStaff(user) && supervisorLinks.map((link) => renderLink(link))}
         </nav>
         <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">

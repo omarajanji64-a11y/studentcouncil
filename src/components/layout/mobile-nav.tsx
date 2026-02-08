@@ -24,7 +24,7 @@ const navLinks = [
   { href: "/complaints", icon: MessageSquare, label: "Complaints" },
   { href: "/logs", icon: ScrollText, label: "Logs" },
   { href: "/analytics", icon: BarChart3, label: "Analytics", role: "admin" },
-  { href: "/schedule", icon: CalendarClock, label: "Schedule", role: "staff" },
+  { href: "/schedule", icon: CalendarClock, label: "Schedule" },
   { href: "/members", icon: Users, label: "Members", role: "staff" },
   { href: "/notifications", icon: Send, label: "Notify", role: "staff" },
 ];
