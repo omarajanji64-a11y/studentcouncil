@@ -1,15 +1,13 @@
 "use client";
 
 import { PageHeader } from "@/components/shared/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ComplaintForm } from "@/components/complaints/complaint-form";
 import { ComplaintsTable } from "@/components/complaints/complaints-table";
 import { useAuth } from "@/hooks/use-auth";
 import { useComplaints, useDuties, useLogs } from "@/hooks/use-firestore";
 import { isStaff } from "@/lib/permissions";
 import { LogsTable } from "@/components/logs/logs-table";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { format } from "date-fns";
 
 export default function ComplaintsPage() {
   const { user } = useAuth();
@@ -51,47 +49,7 @@ export default function ComplaintsPage() {
             <LogsTable data={complaintLogs} loading={logsLoading} />
           </CardContent>
         </Card>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Complaint Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {logsLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={2} className="h-24 text-center">
-                      Loading activity...
-                    </TableCell>
-                  </TableRow>
-                ) : complaintLogs.length ? (
-                  complaintLogs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell>{format(new Date(log.timestamp), "PPp")}</TableCell>
-                      <TableCell className="capitalize">
-                        {log.action.replace(/_/g, " ")}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={2} className="h-24 text-center">
-                      No activity yet.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+      ) : null}
     </div>
   );
 }
