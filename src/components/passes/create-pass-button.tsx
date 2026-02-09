@@ -26,6 +26,7 @@ export function CreatePassButton() {
   const [isCreating, setIsCreating] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [studentId, setStudentId] = useState("");
+  const [studentGender, setStudentGender] = useState<"male" | "female" | "mixed" | "">("");
   const [reason, setReason] = useState("");
   const [passType, setPassType] = useState<
     "active_break" | "time_specified" | "community"
@@ -41,6 +42,14 @@ export function CreatePassButton() {
         variant: "destructive",
         title: "Missing fields",
         description: "Student name and reason are required.",
+      });
+      return;
+    }
+    if (!studentGender) {
+      toast({
+        variant: "destructive",
+        title: "Missing gender",
+        description: "Please select the student's gender.",
       });
       return;
     }
@@ -64,6 +73,7 @@ export function CreatePassButton() {
       await createPass({
         studentName,
         studentId: studentId || undefined,
+        studentGender,
         reason,
         issuedBy: user.name,
         issuedById: user.uid,
@@ -75,6 +85,7 @@ export function CreatePassButton() {
       setIsOpen(false);
       setStudentName("");
       setStudentId("");
+      setStudentGender("");
       setReason("");
       toast({
         title: "Pass Created",
@@ -139,6 +150,24 @@ export function CreatePassButton() {
               <SelectItem value="active_break">Active Break</SelectItem>
               <SelectItem value="time_specified">Time-Specified</SelectItem>
               <SelectItem value="community">Community</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="pass-gender" className="text-right">
+            Gender
+          </Label>
+          <Select
+            value={studentGender}
+            onValueChange={(value) => setStudentGender(value as any)}
+          >
+            <SelectTrigger id="pass-gender" className="col-span-3">
+              <SelectValue placeholder="Select gender" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="male">Male</SelectItem>
+              <SelectItem value="female">Female</SelectItem>
+              <SelectItem value="mixed">Mixed</SelectItem>
             </SelectContent>
           </Select>
         </div>

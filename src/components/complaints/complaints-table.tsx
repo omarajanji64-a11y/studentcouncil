@@ -24,6 +24,7 @@ import { ChevronDown, File } from "lucide-react";
 import type { Complaint, Duty } from "@/lib/types";
 import { updateComplaint } from "@/hooks/use-firestore";
 import { useAuth } from "@/hooks/use-auth";
+import { isSupervisor } from "@/lib/permissions";
 
 const statusOptions: Complaint["status"][] = ["Open", "In Progress", "Resolved"];
 
@@ -58,10 +59,11 @@ export function ComplaintsTable({
   const filtered = useMemo(() => {
     let filteredData = [...data].sort((a, b) => b.timestamp - a.timestamp);
     if (filter) {
+      const includesStudentInfo = isSupervisor(user);
       filteredData = filteredData.filter((complaint) =>
         [
-          complaint.studentId,
-          complaint.studentName ?? "",
+          includesStudentInfo ? complaint.studentId : "",
+          includesStudentInfo ? complaint.studentName ?? "" : "",
           complaint.groupName ?? "",
           complaint.title,
           complaint.description,
@@ -222,7 +224,9 @@ export function ComplaintsTable({
                   <TableCell className="font-medium">
                     {complaint.targetType === "group" && complaint.groupName
                       ? complaint.groupName
-                      : complaint.studentName ?? complaint.studentId}
+                      : isSupervisor(user)
+                      ? complaint.studentName ?? complaint.studentId
+                      : "Hidden"}
                   </TableCell>
                   <TableCell>{complaint.title}</TableCell>
                   <TableCell className="text-muted-foreground">

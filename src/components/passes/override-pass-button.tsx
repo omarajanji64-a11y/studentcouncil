@@ -17,6 +17,7 @@ export function OverridePassButton() {
   const [isCreating, setIsCreating] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [studentId, setStudentId] = useState("");
+  const [studentGender, setStudentGender] = useState<"male" | "female" | "mixed" | "">("");
   const [reason, setReason] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const { toast } = useToast();
@@ -34,6 +35,14 @@ export function OverridePassButton() {
       });
       return;
     }
+    if (!studentGender) {
+      toast({
+        variant: "destructive",
+        title: "Missing gender",
+        description: "Please select the student's gender.",
+      });
+      return;
+    }
 
     setIsCreating(true);
     try {
@@ -44,6 +53,7 @@ export function OverridePassButton() {
         {
           studentName,
           studentId: studentId || undefined,
+          studentGender,
           reason,
           issuedBy: user.name,
           issuedById: user.uid,
@@ -57,6 +67,7 @@ export function OverridePassButton() {
       setIsOpen(false);
       setStudentName("");
       setStudentId("");
+      setStudentGender("");
       setReason("");
       setExpiresAt("");
       toast({
@@ -130,6 +141,24 @@ export function OverridePassButton() {
             value={studentId}
             onChange={(event) => setStudentId(event.target.value)}
           />
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="override-gender" className="text-right">
+            Gender
+          </Label>
+          <select
+            id="override-gender"
+            className="col-span-3 h-10 rounded-md border border-input bg-background px-3 text-sm"
+            value={studentGender}
+            onChange={(event) =>
+              setStudentGender(event.target.value as any)
+            }
+          >
+            <option value="">Select gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="mixed">Mixed</option>
+          </select>
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
           <Label htmlFor="override-reason" className="text-right">

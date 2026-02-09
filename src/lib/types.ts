@@ -19,6 +19,7 @@ export type Pass = {
   id: string;
   studentName: string;
   studentId?: string;
+  studentGender?: "male" | "female" | "mixed";
   reason: string;
   issuedBy: string;
   issuedById?: string;
@@ -57,6 +58,7 @@ export type Complaint = {
   studentName?: string;
   targetType?: "student" | "group";
   groupName?: string;
+  targetGender?: "male" | "female" | "mixed";
   dutyId?: string | null;
   dutyLocation?: string | null;
   title: string;

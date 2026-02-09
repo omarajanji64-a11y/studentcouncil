@@ -64,6 +64,7 @@ export function DutyTable() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [draftAssignments, setDraftAssignments] = useState<Record<string, string[]>>({});
+  const [locationFilter, setLocationFilter] = useState<"all" | "boys" | "girls">("all");
 
   const canEdit = canEditSchedule(user);
   const sortedBreaks = useMemo(
@@ -106,6 +107,20 @@ export function DutyTable() {
     });
     return assignments;
   }, [dutyMap, sortedBreaks]);
+
+  const visibleLocations = useMemo(() => {
+    if (locationFilter === "boys") {
+      return dutyLocations.filter((location) =>
+        location.toLowerCase().includes("boys")
+      );
+    }
+    if (locationFilter === "girls") {
+      return dutyLocations.filter((location) =>
+        location.toLowerCase().includes("girls")
+      );
+    }
+    return dutyLocations;
+  }, [locationFilter]);
 
   const openEditor = (breakId: string, location: string) => {
     if (!canEdit) return;
@@ -226,6 +241,29 @@ export function DutyTable() {
         ) : null}
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant={locationFilter === "all" ? "default" : "outline"}
+            onClick={() => setLocationFilter("all")}
+          >
+            All
+          </Button>
+          <Button
+            size="sm"
+            variant={locationFilter === "boys" ? "default" : "outline"}
+            onClick={() => setLocationFilter("boys")}
+          >
+            Boys
+          </Button>
+          <Button
+            size="sm"
+            variant={locationFilter === "girls" ? "default" : "outline"}
+            onClick={() => setLocationFilter("girls")}
+          >
+            Girls
+          </Button>
+        </div>
         <Tabs defaultValue={isStaff(user) ? "supervisor" : "member"}>
           <TabsList>
             <TabsTrigger value="member">Member View</TabsTrigger>
@@ -261,7 +299,7 @@ export function DutyTable() {
                       <TableRow key={member.uid}>
                         <TableCell className="font-medium">{member.name}</TableCell>
                         {sortedBreaks.map((breakItem) => {
-                          const assignedLocations = dutyLocations.filter((location) => {
+                          const assignedLocations = visibleLocations.filter((location) => {
                             const duty = dutyMap.get(`${breakItem.id}:${location}`);
                             return duty?.memberIds?.includes(member.uid);
                           });
@@ -309,7 +347,7 @@ export function DutyTable() {
                         Loading breaks...
                       </TableCell>
                     </TableRow>
-                  ) : dutyLocations.map((location) => (
+                  ) : visibleLocations.map((location) => (
                     <TableRow key={location}>
                       <TableCell className="font-medium">{location}</TableCell>
                       {sortedBreaks.map((breakItem) => {

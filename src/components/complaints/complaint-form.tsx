@@ -17,6 +17,7 @@ export function ComplaintForm() {
   const { toast } = useToast();
   const [targetType, setTargetType] = useState<"student" | "group">("student");
   const [groupName, setGroupName] = useState("");
+  const [targetGender, setTargetGender] = useState<"male" | "female" | "mixed" | "">("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [notes, setNotes] = useState("");
@@ -55,6 +56,14 @@ export function ComplaintForm() {
       });
       return;
     }
+    if (!targetGender) {
+      toast({
+        variant: "destructive",
+        title: "Missing gender",
+        description: "Please select the student's gender.",
+      });
+      return;
+    }
     setIsSubmitting(true);
     try {
       const complaintId = await createComplaint(
@@ -63,6 +72,7 @@ export function ComplaintForm() {
           studentName: user.name,
           targetType,
           groupName: targetType === "group" ? groupName.trim() : undefined,
+          targetGender,
           dutyId: activeDuty?.id ?? null,
           dutyLocation: activeDuty?.location ?? null,
           title,
@@ -101,6 +111,7 @@ export function ComplaintForm() {
       setNotes("");
       setGroupName("");
       setTargetType("student");
+      setTargetGender("");
       setFiles([]);
       if (inputRef.current) inputRef.current.value = "";
       toast({
@@ -152,6 +163,22 @@ export function ComplaintForm() {
             />
           </div>
         ) : null}
+        <div className="grid gap-2">
+          <Label htmlFor="complaint-gender">Gender</Label>
+          <select
+            id="complaint-gender"
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            value={targetGender}
+            onChange={(event) =>
+              setTargetGender(event.target.value as any)
+            }
+          >
+            <option value="">Select gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="mixed">Mixed</option>
+          </select>
+        </div>
         <div className="grid gap-2">
           <Label htmlFor="complaint-title">Title</Label>
           <Input
