@@ -23,6 +23,7 @@ import {
 import { isAdmin, isStaff } from "@/lib/permissions";
 import { useBreaks, useComplaints, useDuties, useLogs, usePasses } from "@/hooks/use-firestore";
 import { format } from "date-fns";
+import { DutyTable } from "@/components/schedule/duty-table";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -255,6 +256,13 @@ export default function DashboardPage() {
               </Link>
             ) : null}
           </AnimatedList>
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold tracking-tight">
+            Duty Schedule
+          </h2>
+          <DutyTable />
         </div>
       </div>
     </div>
