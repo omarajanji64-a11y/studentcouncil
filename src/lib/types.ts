@@ -55,6 +55,8 @@ export type Complaint = {
   id: string;
   studentId: string;
   studentName?: string;
+  targetType?: "student" | "group";
+  groupName?: string;
   dutyId?: string | null;
   dutyLocation?: string | null;
   title: string;

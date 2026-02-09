@@ -62,6 +62,7 @@ export function ComplaintsTable({
         [
           complaint.studentId,
           complaint.studentName ?? "",
+          complaint.groupName ?? "",
           complaint.title,
           complaint.description,
         ]
@@ -219,7 +220,9 @@ export function ComplaintsTable({
               filtered.map((complaint) => (
                 <TableRow key={complaint.id}>
                   <TableCell className="font-medium">
-                    {complaint.studentName ?? complaint.studentId}
+                    {complaint.targetType === "group" && complaint.groupName
+                      ? complaint.groupName
+                      : complaint.studentName ?? complaint.studentId}
                   </TableCell>
                   <TableCell>{complaint.title}</TableCell>
                   <TableCell className="text-muted-foreground">
