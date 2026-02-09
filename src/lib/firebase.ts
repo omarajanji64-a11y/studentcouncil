@@ -2,7 +2,11 @@
 
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, initializeFirestore } from "firebase/firestore";
+import {
+  getFirestore,
+  initializeFirestore,
+  setLogLevel,
+} from "firebase/firestore";
 import { getFunctions } from "firebase/functions";
 import { getStorage } from "firebase/storage";
 
@@ -30,8 +34,11 @@ const app: FirebaseApp | null = hasRequiredConfig
 export const firebaseReady = hasRequiredConfig;
 export const firebaseApp = app;
 export const auth = app ? getAuth(app) : null;
+setLogLevel("silent");
+
 const firestoreSettings = {
-  experimentalAutoDetectLongPolling: true,
+  experimentalForceLongPolling: true,
+  experimentalAutoDetectLongPolling: false,
   useFetchStreams: false,
 };
 export const db = app
