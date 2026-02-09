@@ -154,9 +154,20 @@ export const updateUserRole = async (
   role: User["role"],
   actorId?: string
 ) => {
-  const ref = docRefs.user(uid);
-  if (!ref) throw new Error("Firestore not configured");
-  await updateDoc(ref, { role, updatedAt: serverCreatedAt() });
+  if (!auth?.currentUser) throw new Error("Firebase Auth not configured");
+  const token = await auth.currentUser.getIdToken();
+  const response = await fetch("/api/admin/update-user-role", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ uid, role }),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data?.error || "Could not update the user's role.");
+  }
   await logAction({
     userId: actorId ?? "system",
     action: "role_changed",
@@ -188,9 +199,20 @@ export const updateUserScheduleEditor = async (
   canEditSchedule: boolean,
   actorId?: string
 ) => {
-  const ref = docRefs.user(uid);
-  if (!ref) throw new Error("Firestore not configured");
-  await updateDoc(ref, { canEditSchedule, updatedAt: serverCreatedAt() });
+  if (!auth?.currentUser) throw new Error("Firebase Auth not configured");
+  const token = await auth.currentUser.getIdToken();
+  const response = await fetch("/api/admin/update-user-schedule-editor", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ uid, canEditSchedule }),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data?.error || "Could not update schedule editor access.");
+  }
   await logAction({
     userId: actorId ?? "system",
     action: "schedule_editor_updated",
