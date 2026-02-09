@@ -73,32 +73,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       unsubscribeProfile?.();
-      unsubscribeProfile = onSnapshot(ref, async (snapshot) => {
-        if (snapshot.exists()) {
-          setUser(converters.user.fromFirestore(snapshot));
-        } else {
+      unsubscribeProfile = onSnapshot(
+        ref,
+        async (snapshot) => {
+          try {
+            if (snapshot.exists()) {
+              setUser(converters.user.fromFirestore(snapshot));
+            } else {
+              const fallback = buildFallbackUser(fbUser, "member");
+              try {
+                await setDoc(ref, {
+                  name: fallback.name,
+                  email: fallback.email,
+                  role: fallback.role,
+                  avatar: fallback.avatar ?? null,
+                  notificationsEnabled: fallback.notificationsEnabled ?? false,
+                  canEditSchedule: fallback.canEditSchedule ?? false,
+                });
+              } catch {
+                // Ignore profile creation errors; use fallback user.
+              }
+              setUser(fallback);
+            }
+            if (loggedInRef.current !== fbUser.uid) {
+              loggedInRef.current = fbUser.uid;
+              await logAction({
+                userId: fbUser.uid,
+                action: "login",
+                entityType: "auth",
+                entityId: fbUser.uid,
+              });
+            }
+            setLoading(false);
+          } catch {
+            const fallback = buildFallbackUser(fbUser, "member");
+            setUser(fallback);
+            setLoading(false);
+          }
+        },
+        () => {
           const fallback = buildFallbackUser(fbUser, "member");
-          await setDoc(ref, {
-            name: fallback.name,
-            email: fallback.email,
-            role: fallback.role,
-            avatar: fallback.avatar ?? null,
-            notificationsEnabled: fallback.notificationsEnabled ?? false,
-            canEditSchedule: fallback.canEditSchedule ?? false,
-          });
           setUser(fallback);
+          setLoading(false);
         }
-        if (loggedInRef.current !== fbUser.uid) {
-          loggedInRef.current = fbUser.uid;
-          await logAction({
-            userId: fbUser.uid,
-            action: "login",
-            entityType: "auth",
-            entityId: fbUser.uid,
-          });
-        }
-        setLoading(false);
-      });
+      );
     });
 
     return () => {
