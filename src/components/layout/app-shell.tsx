@@ -30,9 +30,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <AppSidebar user={user} />
-        <div className="flex flex-1 flex-col sm:pl-14">
+        <div className="flex min-w-0 flex-1 flex-col sm:pl-14">
           <AppHeader />
-          <main className="flex-1 p-4 pb-24 md:p-6 lg:p-8">
+          <main className="min-w-0 flex-1 overflow-x-hidden p-4 pb-24 md:p-6 lg:p-8">
             <PageWrapper>{children}</PageWrapper>
           </main>
         </div>
