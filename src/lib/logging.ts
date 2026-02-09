@@ -18,14 +18,18 @@ export const logAction = async ({
   entityId,
   details,
 }: LogPayload) => {
-  const col = collections.logs();
-  if (!col) return;
-  await addDoc(col, {
-    userId,
-    action,
-    entityType,
-    entityId,
-    details: details ?? null,
-    timestamp: serverCreatedAt(),
-  });
+  try {
+    const col = collections.logs();
+    if (!col) return;
+    await addDoc(col, {
+      userId,
+      action,
+      entityType,
+      entityId,
+      details: details ?? null,
+      timestamp: serverCreatedAt(),
+    });
+  } catch {
+    // Logging should never block the main action.
+  }
 };

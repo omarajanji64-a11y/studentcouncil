@@ -82,10 +82,14 @@ export function CreatePassButton() {
       });
     } catch (error) {
       setIsCreating(false);
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Unable to create the pass in Firestore.";
       toast({
         variant: "destructive",
         title: "Pass Failed",
-        description: "Unable to create the pass in Firestore.",
+        description: message,
       });
     }
   };

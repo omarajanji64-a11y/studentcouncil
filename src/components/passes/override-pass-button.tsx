@@ -65,10 +65,14 @@ export function OverridePassButton() {
       });
     } catch (error) {
       setIsCreating(false);
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Unable to create the override pass.";
       toast({
         variant: "destructive",
         title: "Override Failed",
-        description: "Unable to create the override pass.",
+        description: message,
       });
     }
   };
