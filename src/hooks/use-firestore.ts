@@ -285,20 +285,9 @@ export const updateUserGender = async (
   gender: User["gender"],
   actorId?: string
 ) => {
-  if (!auth?.currentUser) throw new Error("Firebase Auth not configured");
-  const token = await auth.currentUser.getIdToken(true);
-  const response = await fetch("/api/admin/update-user-gender", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ uid, gender }),
-  });
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data?.error || "Could not update user gender.");
-  }
+  const ref = docRefs.user(uid);
+  if (!ref) throw new Error("Firestore not configured");
+  await updateDoc(ref, { gender: gender ?? null, updatedAt: serverCreatedAt() });
   await logAction({
     userId: actorId ?? "system",
     action: "user_gender_updated",
