@@ -3,6 +3,7 @@ export type User = {
   name: string;
   email: string;
   role: 'member' | 'supervisor' | 'admin';
+  gender?: "male" | "female";
   avatar?: string;
   notificationsEnabled?: boolean;
   canEditSchedule?: boolean;

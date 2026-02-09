@@ -280,6 +280,34 @@ export const updateUserNotificationSettings = async (
   });
 };
 
+export const updateUserGender = async (
+  uid: string,
+  gender: User["gender"],
+  actorId?: string
+) => {
+  if (!auth?.currentUser) throw new Error("Firebase Auth not configured");
+  const token = await auth.currentUser.getIdToken();
+  const response = await fetch("/api/admin/update-user-gender", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ uid, gender }),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data?.error || "Could not update user gender.");
+  }
+  await logAction({
+    userId: actorId ?? "system",
+    action: "user_gender_updated",
+    entityType: "user",
+    entityId: uid,
+    details: { gender },
+  });
+};
+
 export const updateUserScheduleEditor = async (
   uid: string,
   canEditSchedule: boolean,
@@ -339,6 +367,7 @@ export const createUser = async (profile: {
   name: string;
   email: string;
   role?: User["role"];
+  gender?: User["gender"];
   password: string;
   actorId?: string;
 }) => {
@@ -355,6 +384,7 @@ export const createUser = async (profile: {
       password: profile.password,
       name: profile.name,
       role: profile.role ?? "member",
+      gender: profile.gender ?? "",
     }),
   });
   if (!response.ok) {

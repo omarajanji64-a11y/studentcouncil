@@ -38,6 +38,7 @@ import {
   removeUser,
   updateUserScheduleEditor,
   updateUserRole,
+  updateUserGender,
   useUsers,
 } from "@/hooks/use-firestore";
 import { useToast } from "@/hooks/use-toast";
@@ -59,6 +60,7 @@ export default function MembersPage() {
   const [inviteRole, setInviteRole] = useState<"member" | "supervisor" | "admin">(
     "member"
   );
+  const [inviteGender, setInviteGender] = useState<"male" | "female" | "">("");
 
   const handleRoleChange = (uid: string, newRole: "member" | "supervisor" | "admin") => {
     updateUserRole(uid, newRole, currentUser?.uid).catch(() =>
@@ -90,6 +92,16 @@ export default function MembersPage() {
     );
   };
 
+  const handleGenderChange = (uid: string, gender: "male" | "female") => {
+    updateUserGender(uid, gender, currentUser?.uid).catch(() =>
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: "Could not update gender.",
+      })
+    );
+  };
+
   const handleCreateUser = async () => {
     if (!inviteName.trim() || !inviteEmail.trim() || !invitePassword.trim()) {
       toast({
@@ -115,6 +127,7 @@ export default function MembersPage() {
         email: inviteEmail.trim(),
         password: invitePassword.trim(),
         role: inviteRole,
+        gender: inviteGender || undefined,
         actorId: currentUser.uid,
       });
       setIsCreating(false);
@@ -123,6 +136,7 @@ export default function MembersPage() {
       setInviteEmail("");
       setInvitePassword("");
       setInviteRole("member");
+      setInviteGender("");
       toast({
         title: "Member added",
         description: "The member profile was created successfully.",
@@ -234,6 +248,26 @@ export default function MembersPage() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+              <Label htmlFor="invite-gender" className="sm:text-right">
+                Gender
+              </Label>
+              <Select
+                value={inviteGender}
+                onValueChange={(value: "male" | "female" | "") =>
+                  setInviteGender(value)
+                }
+                disabled={isCreating}
+              >
+                <SelectTrigger id="invite-gender" className="sm:col-span-3">
+                  <SelectValue placeholder="Select gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">Boy</SelectItem>
+                  <SelectItem value="female">Girl</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </MotionModal>
       </PageHeader>
@@ -317,6 +351,20 @@ export default function MembersPage() {
                       >
                         {user.role}
                       </Badge>
+                      <Select
+                        value={user.gender ?? ""}
+                        onValueChange={(value: "male" | "female" | "") =>
+                          value ? handleGenderChange(user.uid, value) : null
+                        }
+                      >
+                        <SelectTrigger className="h-8 w-[120px]">
+                          <SelectValue placeholder="Gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="male">Boy</SelectItem>
+                          <SelectItem value="female">Girl</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">Schedule Editor</span>
                         <Switch
@@ -345,6 +393,7 @@ export default function MembersPage() {
                   <TableHead>Name</TableHead>
                   <TableHead className="hidden sm:table-cell">Email</TableHead>
                   <TableHead>Role</TableHead>
+                  <TableHead>Gender</TableHead>
                   <TableHead>Schedule Editor</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
@@ -354,7 +403,7 @@ export default function MembersPage() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={6} className="h-24 text-center">
                       <div className="space-y-3">
                         <Skeleton className="h-4 w-2/3 mx-auto" />
                         <Skeleton className="h-4 w-1/2 mx-auto" />
@@ -387,6 +436,22 @@ export default function MembersPage() {
                       >
                         {user.role}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={user.gender ?? ""}
+                        onValueChange={(value: "male" | "female" | "") =>
+                          value ? handleGenderChange(user.uid, value) : null
+                        }
+                      >
+                        <SelectTrigger className="w-[120px]">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="male">Boy</SelectItem>
+                          <SelectItem value="female">Girl</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell>
                       <Switch
@@ -445,7 +510,7 @@ export default function MembersPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={6} className="h-24 text-center">
                       No members found.
                     </TableCell>
                   </TableRow>

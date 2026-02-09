@@ -48,6 +48,7 @@ export const converters = {
         name: data.name ?? "Unknown",
         email: data.email ?? "",
         role: data.role ?? "member",
+        gender: data.gender ?? undefined,
         avatar: data.avatar ?? undefined,
         notificationsEnabled: data.notificationsEnabled ?? false,
         canEditSchedule: data.canEditSchedule ?? false,

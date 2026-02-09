@@ -18,6 +18,8 @@ const adminApp =
         }),
       });
 
+const validGenders = new Set(["male", "female", ""]);
+
 export async function POST(request: Request) {
   if (!projectId || !clientEmail || !privateKey) {
     return NextResponse.json(
@@ -35,15 +37,12 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json().catch(() => ({}));
-  const email = (body.email || "").toString().trim().toLowerCase();
-  const password = (body.password || "").toString();
-  const name = (body.name || "").toString().trim();
-  const role = (body.role || "member").toString();
+  const uid = (body.uid || "").toString().trim();
   const gender = (body.gender || "").toString().trim();
 
-  if (!email || !password) {
+  if (!uid || !validGenders.has(gender)) {
     return NextResponse.json(
-      { error: "Email and password are required." },
+      { error: "Valid uid and gender are required." },
       { status: 400 }
     );
   }
@@ -53,40 +52,27 @@ export async function POST(request: Request) {
     const decoded = await auth.verifyIdToken(token);
 
     const db = getFirestore(adminApp);
-    const requesterSnap = await db
-      .collection("users")
-      .doc(decoded.uid)
-      .get();
+    const requesterSnap = await db.collection("users").doc(decoded.uid).get();
     const requesterRole = requesterSnap.data()?.role;
     if (requesterRole !== "supervisor" && requesterRole !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const userRecord = await auth.createUser({
-      email,
-      password,
-      displayName: name || undefined,
-    });
-    await auth.setCustomUserClaims(userRecord.uid, { role });
+    await db
+      .collection("users")
+      .doc(uid)
+      .set(
+        {
+          gender: gender || null,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
 
-    await db.collection("users").doc(userRecord.uid).set(
-      {
-        name: name || "Staff Member",
-        email,
-        role,
-        gender: gender || null,
-        avatar: null,
-        notificationsEnabled: false,
-        canEditSchedule: false,
-        updatedAt: FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
-
-    return NextResponse.json({ uid: userRecord.uid });
+    return NextResponse.json({ ok: true });
   } catch (error: any) {
     return NextResponse.json(
-      { error: error?.message || "Unable to create user." },
+      { error: error?.message || "Unable to update gender." },
       { status: 500 }
     );
   }
