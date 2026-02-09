@@ -35,9 +35,13 @@ const firestoreSettings = {
   useFetchStreams: false,
 };
 export const db = app
-  ? getApps().length
-    ? getFirestore(app)
-    : initializeFirestore(app, firestoreSettings)
+  ? (() => {
+      try {
+        return initializeFirestore(app, firestoreSettings);
+      } catch {
+        return getFirestore(app);
+      }
+    })()
   : null;
 const functionsRegion =
   process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_REGION || "us-central1";

@@ -174,10 +174,14 @@ export function DutyTable() {
       setIsEditing(false);
       setDraftAssignments({});
     } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Could not save schedule changes.";
       toast({
         variant: "destructive",
         title: "Save failed",
-        description: "Could not save schedule changes.",
+        description: message,
       });
     } finally {
       setIsSaving(false);
