@@ -61,6 +61,9 @@ export default function MembersPage() {
     "member"
   );
   const [inviteGender, setInviteGender] = useState<"male" | "female" | "">("");
+  const [genderOverrides, setGenderOverrides] = useState<
+    Record<string, "male" | "female" | undefined>
+  >({});
 
   const handleRoleChange = (uid: string, newRole: "member" | "supervisor" | "admin") => {
     updateUserRole(uid, newRole, currentUser?.uid).catch(() =>
@@ -93,13 +96,20 @@ export default function MembersPage() {
   };
 
   const handleGenderChange = (uid: string, gender: "male" | "female") => {
-    updateUserGender(uid, gender, currentUser?.uid).catch(() =>
-      toast({
-        variant: "destructive",
-        title: "Update failed",
-        description: "Could not update gender.",
-      })
-    );
+    setGenderOverrides((prev) => ({ ...prev, [uid]: gender }));
+    updateUserGender(uid, gender, currentUser?.uid)
+      .catch(() => {
+        setGenderOverrides((prev) => {
+          const next = { ...prev };
+          delete next[uid];
+          return next;
+        });
+        toast({
+          variant: "destructive",
+          title: "Update failed",
+          description: "Could not update sex.",
+        });
+      });
   };
 
   const handleCreateUser = async () => {
@@ -250,7 +260,7 @@ export default function MembersPage() {
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
               <Label htmlFor="invite-gender" className="sm:text-right">
-                Gender
+                Sex
               </Label>
               <Select
                 value={inviteGender}
@@ -260,11 +270,11 @@ export default function MembersPage() {
                 disabled={isCreating}
               >
                 <SelectTrigger id="invite-gender" className="sm:col-span-3">
-                  <SelectValue placeholder="Select gender" />
+                  <SelectValue placeholder="Select sex" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="male">Boy</SelectItem>
-                  <SelectItem value="female">Girl</SelectItem>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -352,17 +362,17 @@ export default function MembersPage() {
                         {user.role}
                       </Badge>
                       <Select
-                        value={user.gender ?? ""}
+                        value={genderOverrides[user.uid] ?? user.gender ?? ""}
                         onValueChange={(value: "male" | "female" | "") =>
                           value ? handleGenderChange(user.uid, value) : null
                         }
                       >
                         <SelectTrigger className="h-8 w-[120px]">
-                          <SelectValue placeholder="Gender" />
+                          <SelectValue placeholder="Sex" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="male">Boy</SelectItem>
-                          <SelectItem value="female">Girl</SelectItem>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
                         </SelectContent>
                       </Select>
                       <div className="flex items-center gap-2">
@@ -393,7 +403,7 @@ export default function MembersPage() {
                   <TableHead>Name</TableHead>
                   <TableHead className="hidden sm:table-cell">Email</TableHead>
                   <TableHead>Role</TableHead>
-                  <TableHead>Gender</TableHead>
+                  <TableHead>Sex</TableHead>
                   <TableHead>Schedule Editor</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
@@ -439,17 +449,17 @@ export default function MembersPage() {
                     </TableCell>
                     <TableCell>
                       <Select
-                        value={user.gender ?? ""}
+                        value={genderOverrides[user.uid] ?? user.gender ?? ""}
                         onValueChange={(value: "male" | "female" | "") =>
                           value ? handleGenderChange(user.uid, value) : null
                         }
                       >
                         <SelectTrigger className="w-[120px]">
-                          <SelectValue placeholder="Select" />
+                          <SelectValue placeholder="Select sex" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="male">Boy</SelectItem>
-                          <SelectItem value="female">Girl</SelectItem>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>
