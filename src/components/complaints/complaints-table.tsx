@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MotionModal } from "@/components/motion/motion-modal";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -25,6 +26,7 @@ import type { Complaint, Duty } from "@/lib/types";
 import { updateComplaint } from "@/hooks/use-firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { isSupervisor } from "@/lib/permissions";
+import { Badge } from "@/components/ui/badge";
 
 const statusOptions: Complaint["status"][] = ["Open", "In Progress", "Resolved"];
 
@@ -118,12 +120,12 @@ export function ComplaintsTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Input
           placeholder="Search by student or title..."
           value={filter}
           onChange={(event) => setFilter(event.target.value)}
-          className="max-w-sm"
+          className="w-full sm:max-w-sm"
         />
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2">
@@ -196,7 +198,78 @@ export function ComplaintsTable({
           </Button>
         </div>
       </div>
-      <div className="rounded-md border">
+      <div className="grid gap-3 md:hidden">
+        {loading ? (
+          <Card>
+            <CardContent className="pt-6 text-center text-sm text-muted-foreground">
+              Loading complaints...
+            </CardContent>
+          </Card>
+        ) : filtered.length ? (
+          filtered.map((complaint) => {
+            const nameLabel =
+              complaint.targetType === "group" && complaint.groupName
+                ? complaint.groupName
+                : isSupervisor(user)
+                ? complaint.studentName ?? complaint.studentId
+                : "Hidden";
+            return (
+              <Card key={complaint.id}>
+                <CardContent className="pt-5 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-base font-semibold">{complaint.title}</div>
+                      <div className="text-sm text-muted-foreground">{nameLabel}</div>
+                    </div>
+                    <Badge variant="secondary">{complaint.status}</Badge>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {complaint.description}
+                  </div>
+                  <div className="grid gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center justify-between">
+                      <span>Duty</span>
+                      <span>
+                        {complaint.dutyId ? dutyLabel.get(complaint.dutyId) ?? "Unknown" : "N/A"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Location</span>
+                      <span>{complaint.dutyLocation ?? "N/A"}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Submitted</span>
+                      <span>{format(new Date(complaint.timestamp), "PPp")}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {complaint.attachments?.length ? (
+                      <Button size="sm" variant="outline" onClick={() => setGallery(complaint)}>
+                        View ({complaint.attachments.length})
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No attachments</span>
+                    )}
+                    {staffView ? (
+                      <Button size="sm" variant="outline" onClick={() => openEditor(complaint)}>
+                        Update
+                      </Button>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        ) : (
+          <Card>
+            <CardContent className="pt-6 text-center text-sm text-muted-foreground">
+              No complaints found.
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>

@@ -118,37 +118,37 @@ export function OverridePassButton() {
             Overrides are logged with full details.
           </p>
         </div>
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="override-student" className="text-right">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+          <Label htmlFor="override-student" className="sm:text-right">
             Student
           </Label>
           <Input
             id="override-student"
             placeholder="Name"
-            className="col-span-3"
+            className="sm:col-span-3"
             value={studentName}
             onChange={(event) => setStudentName(event.target.value)}
           />
         </div>
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="override-student-id" className="text-right">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+          <Label htmlFor="override-student-id" className="sm:text-right">
             Student ID
           </Label>
           <Input
             id="override-student-id"
             placeholder="Optional ID"
-            className="col-span-3"
+            className="sm:col-span-3"
             value={studentId}
             onChange={(event) => setStudentId(event.target.value)}
           />
         </div>
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="override-gender" className="text-right">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+          <Label htmlFor="override-gender" className="sm:text-right">
             Gender
           </Label>
           <select
             id="override-gender"
-            className="col-span-3 h-10 rounded-md border border-input bg-background px-3 text-sm"
+            className="sm:col-span-3 h-10 rounded-md border border-input bg-background px-3 text-sm"
             value={studentGender}
             onChange={(event) =>
               setStudentGender(event.target.value as any)
@@ -160,26 +160,26 @@ export function OverridePassButton() {
             <option value="mixed">Mixed</option>
           </select>
         </div>
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="override-reason" className="text-right">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+          <Label htmlFor="override-reason" className="sm:text-right">
             Reason
           </Label>
           <Input
             id="override-reason"
             placeholder="Required"
-            className="col-span-3"
+            className="sm:col-span-3"
             value={reason}
             onChange={(event) => setReason(event.target.value)}
           />
         </div>
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="override-expires" className="text-right">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+          <Label htmlFor="override-expires" className="sm:text-right">
             Expires At
           </Label>
           <Input
             id="override-expires"
             type="datetime-local"
-            className="col-span-3"
+            className="sm:col-span-3"
             value={expiresAt}
             onChange={(event) => setExpiresAt(event.target.value)}
           />

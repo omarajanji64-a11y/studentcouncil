@@ -76,7 +76,7 @@ export default function ActivePassesPage() {
         title="Active Passes"
         description="A live view of all currently active canteen passes."
       >
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-8 gap-1">
@@ -101,7 +101,81 @@ export default function ActivePassesPage() {
           </Button>
         </div>
       </PageHeader>
-      <Card>
+      <div className="grid gap-3 md:hidden">
+        {loading ? (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            </CardContent>
+          </Card>
+        ) : activePasses.length ? (
+          activePasses.map((pass) => {
+            const isRecent = recentIds.has(pass.id);
+            return (
+              <Card key={pass.id}>
+                <CardContent className="pt-5 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2 text-base font-semibold">
+                        {pass.studentName}
+                        {isRecent ? (
+                          <span className="text-emerald-500">
+                            <CheckCircle2 className="h-4 w-4" />
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {pass.reason}
+                      </div>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Toggle menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>View Details</DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                          onClick={() => updatePassStatus(pass.id, "revoked", user?.uid)}
+                        >
+                          Revoke Pass
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <div className="grid gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center justify-between">
+                      <span>Issued</span>
+                      <span>{format(new Date(pass.issuedAt), "p")}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Expires</span>
+                      <span>{format(new Date(pass.expiresAt), "p")}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Issued By</span>
+                      <span>{pass.issuedBy}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        ) : (
+          <Card>
+            <CardContent className="pt-6 text-center text-sm text-muted-foreground">
+              No active passes.
+            </CardContent>
+          </Card>
+        )}
+      </div>
+      <Card className="hidden md:block">
         <CardContent className="pt-6">
           <Table>
             <TableHeader>

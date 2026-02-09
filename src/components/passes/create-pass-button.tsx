@@ -138,12 +138,12 @@ export function CreatePassButton() {
       }
     >
       <div className="grid gap-4 py-4">
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="pass-type" className="text-right">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+          <Label htmlFor="pass-type" className="sm:text-right">
             Type
           </Label>
           <Select value={passType} onValueChange={(value) => setPassType(value as any)}>
-            <SelectTrigger id="pass-type" className="col-span-3">
+            <SelectTrigger id="pass-type" className="sm:col-span-3">
               <SelectValue placeholder="Select pass type" />
             </SelectTrigger>
             <SelectContent>
@@ -153,15 +153,15 @@ export function CreatePassButton() {
             </SelectContent>
           </Select>
         </div>
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="pass-gender" className="text-right">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+          <Label htmlFor="pass-gender" className="sm:text-right">
             Gender
           </Label>
           <Select
             value={studentGender}
             onValueChange={(value) => setStudentGender(value as any)}
           >
-            <SelectTrigger id="pass-gender" className="col-span-3">
+            <SelectTrigger id="pass-gender" className="sm:col-span-3">
               <SelectValue placeholder="Select gender" />
             </SelectTrigger>
             <SelectContent>
@@ -171,52 +171,52 @@ export function CreatePassButton() {
             </SelectContent>
           </Select>
         </div>
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="student" className="text-right">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+          <Label htmlFor="student" className="sm:text-right">
             Student
           </Label>
           <Input
             id="student"
             placeholder="Name"
-            className="col-span-3"
+            className="sm:col-span-3"
             value={studentName}
             onChange={(event) => setStudentName(event.target.value)}
           />
         </div>
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="student-id" className="text-right">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+          <Label htmlFor="student-id" className="sm:text-right">
             Student ID
           </Label>
           <Input
             id="student-id"
             placeholder="Optional ID"
-            className="col-span-3"
+            className="sm:col-span-3"
             value={studentId}
             onChange={(event) => setStudentId(event.target.value)}
           />
         </div>
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="reason" className="text-right">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+          <Label htmlFor="reason" className="sm:text-right">
             Reason
           </Label>
           <Input
             id="reason"
             placeholder="e.g., Forgot lunch"
-            className="col-span-3"
+            className="sm:col-span-3"
             value={reason}
             onChange={(event) => setReason(event.target.value)}
           />
         </div>
         {passType !== "active_break" ? (
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="duration" className="text-right">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+            <Label htmlFor="duration" className="sm:text-right">
               Duration (min)
             </Label>
             <Input
               id="duration"
               type="number"
               min={5}
-              className="col-span-3"
+              className="sm:col-span-3"
               value={durationMinutes}
               onChange={(event) => setDurationMinutes(event.target.value)}
             />

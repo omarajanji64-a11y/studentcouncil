@@ -271,7 +271,38 @@ export function DutyTable() {
           </TabsList>
 
           <TabsContent value="member">
-            <div className="overflow-auto rounded-md border">
+            <div className="grid gap-3 md:hidden">
+              {breaksLoading ? (
+                <div className="rounded-md border p-4 text-sm text-muted-foreground">
+                  Loading breaks...
+                </div>
+              ) : sortedBreaks.length ? (
+                sortedBreaks.map((breakItem) => {
+                  const assignedLocations = visibleLocations.filter((location) => {
+                    const duty = dutyMap.get(`${breakItem.id}:${location}`);
+                    return duty?.memberIds?.includes(user?.uid ?? "");
+                  });
+                  return (
+                    <div key={breakItem.id} className="rounded-md border p-4 space-y-2">
+                      <div className="font-semibold">{breakItem.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {format(new Date(breakItem.startTime), "p")} -{" "}
+                        {format(new Date(breakItem.endTime), "p")}
+                      </div>
+                      <div className="text-sm">
+                        {assignedLocations.length ? assignedLocations.join(", ") : "No assignment"}
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="rounded-md border p-4 text-sm text-muted-foreground">
+                  No breaks found.
+                </div>
+              )}
+            </div>
+
+            <div className="hidden md:block overflow-auto rounded-md border">
               <Table className="min-w-[760px]">
                 <TableHeader>
                   <TableRow>
@@ -324,7 +355,58 @@ export function DutyTable() {
           </TabsContent>
 
           <TabsContent value="supervisor">
-            <div className="overflow-auto rounded-md border">
+            <div className="grid gap-4 md:hidden">
+              {breaksLoading ? (
+                <div className="rounded-md border p-4 text-sm text-muted-foreground">
+                  Loading breaks...
+                </div>
+              ) : sortedBreaks.length ? (
+                sortedBreaks.map((breakItem) => (
+                  <div key={breakItem.id} className="rounded-md border p-4 space-y-3">
+                    <div>
+                      <div className="font-semibold">{breakItem.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {format(new Date(breakItem.startTime), "p")} -{" "}
+                        {format(new Date(breakItem.endTime), "p")}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {visibleLocations.map((location) => {
+                        const duty = dutyMap.get(`${breakItem.id}:${location}`);
+                        const draftKey = `${breakItem.id}:${location}`;
+                        const draftNames = (draftAssignments[draftKey] ?? [])
+                          .map((id) => memberMap.get(id) ?? id)
+                          .join(", ");
+                        return (
+                          <div key={`${breakItem.id}:${location}`} className="flex items-center justify-between gap-3">
+                            <div className="text-sm font-medium">{location}</div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-auto whitespace-normal text-left"
+                              disabled={!canEdit || !isEditing}
+                              onClick={() => openEditor(breakItem.id, location)}
+                            >
+                              {isEditing
+                                ? draftNames || "Assign"
+                                : duty?.memberNames?.length
+                                ? duty.memberNames.join(", ")
+                                : "Assign"}
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-md border p-4 text-sm text-muted-foreground">
+                  No breaks found.
+                </div>
+              )}
+            </div>
+
+            <div className="hidden md:block overflow-auto rounded-md border">
               <Table className="min-w-[760px]">
                 <TableHeader>
                   <TableRow>

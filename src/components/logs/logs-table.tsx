@@ -21,6 +21,7 @@ import {
 import { ChevronDown, File } from "lucide-react";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
 
 export function LogsTable({ data, loading }: { data: Log[]; loading?: boolean }) {
   const [filter, setFilter] = React.useState("");
@@ -53,12 +54,12 @@ export function LogsTable({ data, loading }: { data: Log[]; loading?: boolean })
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Input
           placeholder="Search action, user, or entity..."
           value={filter}
           onChange={(event) => setFilter(event.target.value)}
-          className="max-w-sm"
+          className="w-full sm:max-w-sm"
         />
         <div className="flex items-center gap-2">
             <DropdownMenu>
@@ -92,7 +93,55 @@ export function LogsTable({ data, loading }: { data: Log[]; loading?: boolean })
             </Button>
         </div>
       </div>
-      <div className="rounded-md border">
+      <div className="grid gap-3 md:hidden">
+        {loading ? (
+          <Card>
+            <CardContent className="pt-6 text-center text-sm text-muted-foreground">
+              Loading activity...
+            </CardContent>
+          </Card>
+        ) : paginatedData.length ? (
+          paginatedData.map((log) => (
+            <Card key={log.id}>
+              <CardContent className="pt-5 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-base font-semibold capitalize">
+                      {log.action.replace(/_/g, " ")}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {log.entityType} {log.entityId ? `• ${log.entityId}` : ""}
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {format(new Date(log.timestamp), "PPp")}
+                  </div>
+                </div>
+                <div className="grid gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between">
+                    <span>User</span>
+                    <span>{log.userId}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Details</span>
+                    <span className="truncate max-w-[60%]">
+                      {log.details ? JSON.stringify(log.details) : "N/A"}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Card>
+            <CardContent className="pt-6 text-center text-sm text-muted-foreground">
+              No results.
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -139,7 +188,7 @@ export function LogsTable({ data, loading }: { data: Log[]; loading?: boolean })
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-muted-foreground">
           Page {currentPage} of {totalPages}
         </div>

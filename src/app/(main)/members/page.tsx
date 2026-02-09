@@ -171,48 +171,48 @@ export default function MembersPage() {
           }
         >
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="invite-name" className="text-right">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+              <Label htmlFor="invite-name" className="sm:text-right">
                 Name
               </Label>
               <Input
                 id="invite-name"
                 placeholder="Full name"
-                className="col-span-3"
+                className="sm:col-span-3"
                 value={inviteName}
                 onChange={(event) => setInviteName(event.target.value)}
                 disabled={isCreating}
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="invite-email" className="text-right">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+              <Label htmlFor="invite-email" className="sm:text-right">
                 Email
               </Label>
               <Input
                 id="invite-email"
                 placeholder="name@school.edu"
-                className="col-span-3"
+                className="sm:col-span-3"
                 value={inviteEmail}
                 onChange={(event) => setInviteEmail(event.target.value)}
                 disabled={isCreating}
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="invite-password" className="text-right">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+              <Label htmlFor="invite-password" className="sm:text-right">
                 Temp password
               </Label>
               <Input
                 id="invite-password"
                 type="password"
                 placeholder="Minimum 6 characters"
-                className="col-span-3"
+                className="sm:col-span-3"
                 value={invitePassword}
                 onChange={(event) => setInvitePassword(event.target.value)}
                 disabled={isCreating}
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="invite-role" className="text-right">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+              <Label htmlFor="invite-role" className="sm:text-right">
                 Role
               </Label>
               <Select
@@ -222,7 +222,7 @@ export default function MembersPage() {
                 }
                 disabled={isCreating}
               >
-                <SelectTrigger id="invite-role" className="col-span-3">
+                <SelectTrigger id="invite-role" className="sm:col-span-3">
                   <SelectValue placeholder="Choose role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -239,119 +239,220 @@ export default function MembersPage() {
       </PageHeader>
       <Card>
         <CardContent className="pt-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead className="hidden sm:table-cell">Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Schedule Editor</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    <div className="space-y-3">
-                      <Skeleton className="h-4 w-2/3 mx-auto" />
-                      <Skeleton className="h-4 w-1/2 mx-auto" />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : sortedUsers.length ? (
-                sortedUsers.map((user) => (
-                <TableRow key={user.uid}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="hidden h-9 w-9 sm:flex">
-                        <AvatarImage
-                          src={user.avatar}
-                          alt="Avatar"
-                          data-ai-hint="person portrait"
-                        />
-                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div className="font-medium">{user.name}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    {user.email}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={user.role === "admin" || user.role === "supervisor" ? "default" : "secondary"}
-                      className="capitalize"
-                    >
-                      {user.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Switch
-                      checked={user.canEditSchedule ?? false}
-                      onCheckedChange={(value) => handleScheduleEditorToggle(user.uid, value)}
-                      disabled={user.uid === currentUser?.uid}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          aria-haspopup="true"
-                          size="icon"
-                          variant="ghost"
-                          disabled={user.uid === currentUser?.uid}
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {currentUser?.role === "admin" ? (
-                          <>
-                            <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "member")}>
-                              Set Member
-                            </DropdownMenuItem>
+          <div className="grid gap-3 md:hidden">
+            {loading ? (
+              <Card>
+                <CardContent className="pt-6 text-center text-sm text-muted-foreground">
+                  Loading members...
+                </CardContent>
+              </Card>
+            ) : sortedUsers.length ? (
+              sortedUsers.map((user) => (
+                <Card key={user.uid}>
+                  <CardContent className="pt-5 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage
+                            src={user.avatar}
+                            alt="Avatar"
+                            data-ai-hint="person portrait"
+                          />
+                          <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-semibold">{user.name}</div>
+                          <div className="text-sm text-muted-foreground">{user.email}</div>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            aria-haspopup="true"
+                            size="icon"
+                            variant="ghost"
+                            disabled={user.uid === currentUser?.uid}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          {currentUser?.role === "admin" ? (
+                            <>
+                              <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "member")}>
+                                Set Member
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "supervisor")}>
+                                Set Supervisor
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "admin")}>
+                                Set Admin
+                              </DropdownMenuItem>
+                            </>
+                          ) : user.role === "member" ? (
                             <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "supervisor")}>
-                              Set Supervisor
+                              Make Supervisor
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "admin")}>
-                              Set Admin
+                          ) : (
+                            <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "member")}>
+                              Make Member
                             </DropdownMenuItem>
-                          </>
-                        ) : user.role === "member" ? (
-                          <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "supervisor")}>
-                            Make Supervisor
+                          )}
+                          <DropdownMenuItem
+                            className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                            onClick={() => handleRemoveUser(user.uid)}
+                          >
+                            Remove User
                           </DropdownMenuItem>
-                        ) : (
-                          <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "member")}>
-                            Make Member
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem
-                          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                          onClick={() => handleRemoveUser(user.uid)}
-                        >
-                          Remove User
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-                ))
-              ) : (
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <Badge
+                        variant={user.role === "admin" || user.role === "supervisor" ? "default" : "secondary"}
+                        className="capitalize"
+                      >
+                        {user.role}
+                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Schedule Editor</span>
+                        <Switch
+                          checked={user.canEditSchedule ?? false}
+                          onCheckedChange={(value) => handleScheduleEditorToggle(user.uid, value)}
+                          disabled={user.uid === currentUser?.uid}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card>
+                <CardContent className="pt-6 text-center text-sm text-muted-foreground">
+                  No members found.
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    No members found.
-                  </TableCell>
+                  <TableHead>Name</TableHead>
+                  <TableHead className="hidden sm:table-cell">Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Schedule Editor</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      <div className="space-y-3">
+                        <Skeleton className="h-4 w-2/3 mx-auto" />
+                        <Skeleton className="h-4 w-1/2 mx-auto" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : sortedUsers.length ? (
+                  sortedUsers.map((user) => (
+                  <TableRow key={user.uid}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="hidden h-9 w-9 sm:flex">
+                          <AvatarImage
+                            src={user.avatar}
+                            alt="Avatar"
+                            data-ai-hint="person portrait"
+                          />
+                          <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="font-medium">{user.name}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {user.email}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={user.role === "admin" || user.role === "supervisor" ? "default" : "secondary"}
+                        className="capitalize"
+                      >
+                        {user.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Switch
+                        checked={user.canEditSchedule ?? false}
+                        onCheckedChange={(value) => handleScheduleEditorToggle(user.uid, value)}
+                        disabled={user.uid === currentUser?.uid}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            aria-haspopup="true"
+                            size="icon"
+                            variant="ghost"
+                            disabled={user.uid === currentUser?.uid}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          {currentUser?.role === "admin" ? (
+                            <>
+                              <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "member")}>
+                                Set Member
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "supervisor")}>
+                                Set Supervisor
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "admin")}>
+                                Set Admin
+                              </DropdownMenuItem>
+                            </>
+                          ) : user.role === "member" ? (
+                            <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "supervisor")}>
+                              Make Supervisor
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem onClick={() => handleRoleChange(user.uid, "member")}>
+                              Make Member
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                            onClick={() => handleRemoveUser(user.uid)}
+                          >
+                            Remove User
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      No members found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
