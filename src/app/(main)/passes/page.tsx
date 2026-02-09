@@ -28,14 +28,22 @@ import { format } from "date-fns";
 import { easing, durations } from "@/lib/animations";
 import { useEffect, useRef, useState } from "react";
 import { useAuth, useRequireAuth } from "@/hooks/use-auth";
+import { useRouter } from "next/navigation";
 
 export default function ActivePassesPage() {
   useRequireAuth("supervisor");
+  const router = useRouter();
   const { data: passes, loading } = usePasses();
   const activePasses = passes.filter((pass) => pass.status === "active");
   const [recentIds, setRecentIds] = useState<Set<string>>(new Set());
   const prevIdsRef = useRef<Set<string>>(new Set());
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (user && user.role === "member") {
+      router.replace("/dashboard");
+    }
+  }, [user, router]);
 
   useEffect(() => {
     const current = new Set(activePasses.map((pass) => pass.id));
