@@ -87,13 +87,9 @@ export default function DashboardPage() {
     .sort((a, b) => b.timestamp - a.timestamp)
     .slice(0, 3);
 
-  const breakNameMap = new Map(breaks.map((breakItem) => [breakItem.id, breakItem.name]));
   const now = Date.now();
-  const visibleDuties = isStaff(user)
-    ? duties
-    : duties.filter((duty) => duty.memberIds.includes(user?.uid ?? ""));
-
-  const dutyPreview = [...visibleDuties]
+  const memberDuties = duties
+    .filter((duty) => duty.memberIds.includes(user?.uid ?? ""))
     .sort((a, b) => a.startTime - b.startTime)
     .filter((duty) => duty.endTime >= now)
     .slice(0, 3);
@@ -227,30 +223,37 @@ export default function DashboardPage() {
               </AnimatedCard>
             </Link>
 
-            <Link href="/schedule" className="block hover:no-underline">
-              <AnimatedCard>
-                <Card className="h-full">
-                  <CardHeader>
-                    <CardTitle>Duty Schedule</CardTitle>
-                    <CardDescription>Upcoming assignments</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    {dutyPreview.length ? (
-                      dutyPreview.map((duty) => (
-                        <div key={duty.id} className="flex items-center justify-between gap-3">
-                          <div className="truncate font-medium">{duty.location ?? duty.title}</div>
-                          <div className="text-muted-foreground">
-                            {breakNameMap.get(duty.breakId ?? "") ?? "Scheduled"}
+            {!isStaff(user) ? (
+              <Link href="/schedule" className="block hover:no-underline">
+                <AnimatedCard>
+                  <Card className="h-full">
+                    <CardHeader>
+                      <CardTitle>Duty Schedule</CardTitle>
+                      <CardDescription>Your upcoming duties</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      {memberDuties.length ? (
+                        memberDuties.map((duty) => (
+                          <div key={duty.id} className="space-y-1">
+                            <div className="truncate font-medium">
+                              {duty.location ?? duty.title}
+                            </div>
+                            <div className="text-muted-foreground">
+                              {format(new Date(duty.startTime), "p")} -{" "}
+                              {format(new Date(duty.endTime), "p")}
+                            </div>
                           </div>
+                        ))
+                      ) : (
+                        <div className="text-muted-foreground">
+                          No upcoming duties assigned.
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-muted-foreground">No upcoming duties.</div>
-                    )}
-                  </CardContent>
-                </Card>
-              </AnimatedCard>
-            </Link>
+                      )}
+                    </CardContent>
+                  </Card>
+                </AnimatedCard>
+              </Link>
+            ) : null}
           </AnimatedList>
         </div>
       </div>
