@@ -35,18 +35,6 @@ export default function DashboardPage() {
 
   const shortcuts = [
     {
-      href: "/passes",
-      icon: Ticket,
-      title: "Active Passes",
-      description: "View all currently active passes.",
-    },
-    {
-      href: "/complaints",
-      icon: MessageSquare,
-      title: "Complaints",
-      description: "Submit and track duty-related complaints.",
-    },
-    {
       href: "/logs",
       icon: ScrollText,
       title: "Activity Logs",
