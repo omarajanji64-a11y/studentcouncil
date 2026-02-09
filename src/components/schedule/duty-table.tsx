@@ -10,7 +10,14 @@ import { MotionModal } from "@/components/motion/motion-modal";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
-import { useBreaks, useDuties, useUsers, createDuty, updateDuty, deleteDuty } from "@/hooks/use-firestore";
+import {
+  useBreaksPolling,
+  useDutiesPolling,
+  useUsersPolling,
+  createDuty,
+  updateDuty,
+  deleteDuty,
+} from "@/hooks/use-firestore";
 import { canEditSchedule, isStaff } from "@/lib/permissions";
 import type { Duty } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -48,10 +55,10 @@ type EditCell = {
 export function DutyTable() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { data: breaks, loading: breaksLoading } = useBreaks();
-  const { data: duties } = useDuties();
+  const { data: breaks, loading: breaksLoading } = useBreaksPolling();
+  const { data: duties } = useDutiesPolling();
   const allowUserList = isStaff(user) || user?.canEditSchedule;
-  const { data: users } = useUsers(allowUserList);
+  const { data: users } = useUsersPolling(allowUserList);
   const [activeCell, setActiveCell] = useState<EditCell | null>(null);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState(false);

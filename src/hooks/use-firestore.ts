@@ -8,6 +8,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
@@ -64,6 +65,58 @@ const useRealtimeCollection = <T,>(
   return state;
 };
 
+const usePollingCollection = <T,>(
+  q: Query<DocumentData> | null,
+  mapDoc: (snap: any) => T,
+  intervalMs = 10000
+): LoadingState<T> => {
+  const [state, setState] = useState<LoadingState<T>>({
+    data: [],
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!q) {
+      setState({ data: [], loading: false, error: "Firestore not configured" });
+      return;
+    }
+    let active = true;
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const run = async () => {
+      try {
+        const snapshot = await getDocs(q);
+        if (!active) return;
+        setState({
+          data: snapshot.docs.map((doc) => mapDoc(doc)),
+          loading: false,
+          error: null,
+        });
+      } catch (error) {
+        if (!active) return;
+        const message =
+          error instanceof Error ? error.message : "Failed to load data.";
+        setState((prev) => ({
+          data: prev.data,
+          loading: false,
+          error: message,
+        }));
+      }
+    };
+
+    run();
+    timer = setInterval(run, intervalMs);
+
+    return () => {
+      active = false;
+      if (timer) clearInterval(timer);
+    };
+  }, [q, mapDoc, intervalMs]);
+
+  return state;
+};
+
 export const useUsers = (enabled = true) => {
   const q = useMemo(() => {
     if (!enabled) return null;
@@ -71,6 +124,15 @@ export const useUsers = (enabled = true) => {
     return col ? query(col) : null;
   }, [enabled]);
   return useRealtimeCollection<User>(q, converters.user.fromFirestore);
+};
+
+export const useUsersPolling = (enabled = true, intervalMs = 10000) => {
+  const q = useMemo(() => {
+    if (!enabled) return null;
+    const col = collections.users();
+    return col ? query(col) : null;
+  }, [enabled]);
+  return usePollingCollection<User>(q, converters.user.fromFirestore, intervalMs);
 };
 
 export const usePasses = () => {
@@ -97,6 +159,14 @@ export const useBreaks = () => {
   return useRealtimeCollection<Break>(q, converters.breakItem.fromFirestore);
 };
 
+export const useBreaksPolling = (intervalMs = 10000) => {
+  const q = useMemo(() => {
+    const col = collections.breaks();
+    return col ? query(col) : null;
+  }, []);
+  return usePollingCollection<Break>(q, converters.breakItem.fromFirestore, intervalMs);
+};
+
 export const useNotifications = (enabled = true) => {
   const q = useMemo(() => {
     if (!enabled) return null;
@@ -117,12 +187,28 @@ export const useDuties = () => {
   return useRealtimeCollection<Duty>(q, converters.duty.fromFirestore);
 };
 
+export const useDutiesPolling = (intervalMs = 10000) => {
+  const q = useMemo(() => {
+    const col = collections.duties();
+    return col ? query(col) : null;
+  }, []);
+  return usePollingCollection<Duty>(q, converters.duty.fromFirestore, intervalMs);
+};
+
 export const useComplaints = () => {
   const q = useMemo(() => {
     const col = collections.complaints();
     return col ? query(col) : null;
   }, []);
   return useRealtimeCollection<Complaint>(q, converters.complaint.fromFirestore);
+};
+
+export const useComplaintsPolling = (intervalMs = 10000) => {
+  const q = useMemo(() => {
+    const col = collections.complaints();
+    return col ? query(col) : null;
+  }, []);
+  return usePollingCollection<Complaint>(q, converters.complaint.fromFirestore, intervalMs);
 };
 
 export const upsertUserProfile = async (user: User) => {

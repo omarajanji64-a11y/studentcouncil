@@ -23,7 +23,7 @@ import { MoreHorizontal, PlusCircle, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Break } from "@/lib/types";
 import { format } from "date-fns";
-import { createBreak, deleteBreak, updateBreak, useBreaks } from "@/hooks/use-firestore";
+import { createBreak, deleteBreak, updateBreak, useBreaksPolling } from "@/hooks/use-firestore";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { MotionModal } from "@/components/motion/motion-modal";
@@ -36,7 +36,7 @@ import { isStaff } from "@/lib/permissions";
 
 export default function SchedulePage() {
   useRequireAuth();
-  const { data: breaks, loading, error } = useBreaks();
+  const { data: breaks, loading, error } = useBreaksPolling();
   const sortedBreaks = [...breaks].sort((a, b) => a.startTime - b.startTime);
   const [isOpen, setIsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
