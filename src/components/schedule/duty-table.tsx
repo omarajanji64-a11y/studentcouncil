@@ -15,7 +15,14 @@ import { canEditSchedule, isStaff } from "@/lib/permissions";
 import type { Duty } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
-const dutyLocations = ["Front Counter", "Kitchen", "Dish Station", "Runner"];
+const dutyLocations = [
+  "4th floor door next to elevator",
+  "4th floor boys staircase",
+  "4th floor girls staircase",
+  "4th midschool help",
+  "2nd floor door next to elevator",
+  "2nd floor door boys staircase",
+];
 const fallbackMembers = [
   "Ayhan",
   "Abdulrazzaq",
