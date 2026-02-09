@@ -48,7 +48,6 @@ export function ComplaintsTable({
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [activeComplaint, setActiveComplaint] = useState<Complaint | null>(null);
-  const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<Complaint["status"]>("Open");
   const [gallery, setGallery] = useState<Complaint | null>(null);
 
@@ -98,7 +97,6 @@ export function ComplaintsTable({
 
   const openEditor = (complaint: Complaint) => {
     setActiveComplaint(complaint);
-    setNotes(complaint.notes ?? "");
     setStatus(complaint.status);
   };
 
@@ -108,7 +106,6 @@ export function ComplaintsTable({
       activeComplaint.id,
       {
         status,
-        notes,
         handledBy: user.name,
         handledById: user.uid,
         studentId: activeComplaint.studentId,
@@ -122,7 +119,7 @@ export function ComplaintsTable({
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Input
-          placeholder="Search by student or title..."
+          placeholder="Search by student or name..."
           value={filter}
           onChange={(event) => setFilter(event.target.value)}
           className="w-full sm:max-w-sm"
@@ -273,8 +270,8 @@ export function ComplaintsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Student</TableHead>
-              <TableHead>Title</TableHead>
+              <TableHead>Reported By</TableHead>
+              <TableHead>Student Name</TableHead>
               <TableHead>Duty</TableHead>
               <TableHead>Location</TableHead>
               <TableHead>Status</TableHead>
@@ -348,33 +345,24 @@ export function ComplaintsTable({
         contentClassName="sm:max-w-[480px]"
         footer={<Button onClick={handleUpdate}>Save Update</Button>}
       >
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label>Status</Label>
-            <div className="flex flex-wrap gap-2">
-              {statusOptions.map((option) => (
-                <Button
-                  key={option}
-                  type="button"
-                  variant={status === option ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setStatus(option)}
-                >
-                  {option}
-                </Button>
-              ))}
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>Status</Label>
+              <div className="flex flex-wrap gap-2">
+                {statusOptions.map((option) => (
+                  <Button
+                    key={option}
+                    type="button"
+                    variant={status === option ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setStatus(option)}
+                  >
+                    {option}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="complaint-notes">Notes</Label>
-            <Input
-              id="complaint-notes"
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              placeholder="Add notes for resolution..."
-            />
-          </div>
-        </div>
       </MotionModal>
 
       <MotionModal

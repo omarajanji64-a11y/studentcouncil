@@ -15,12 +15,9 @@ export function ComplaintForm() {
   const { user } = useAuth();
   const { data: duties } = useDuties();
   const { toast } = useToast();
-  const [targetType, setTargetType] = useState<"student" | "group">("student");
-  const [groupName, setGroupName] = useState("");
-  const [targetGender, setTargetGender] = useState<"male" | "female" | "mixed" | "">("");
+  const [targetGender, setTargetGender] = useState<"male" | "female" | "">("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -44,23 +41,15 @@ export function ComplaintForm() {
       toast({
         variant: "destructive",
         title: "Missing fields",
-        description: "Title and description are required.",
-      });
-      return;
-    }
-    if (targetType === "group" && !groupName.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Missing group name",
-        description: "Group name is required for group complaints.",
+        description: "Student name and description are required.",
       });
       return;
     }
     if (!targetGender) {
       toast({
         variant: "destructive",
-        title: "Missing gender",
-        description: "Please select the student's gender.",
+        title: "Missing sex",
+        description: "Please select the student's sex.",
       });
       return;
     }
@@ -70,14 +59,11 @@ export function ComplaintForm() {
         {
           studentId: user.uid,
           studentName: user.name,
-          targetType,
-          groupName: targetType === "group" ? groupName.trim() : undefined,
           targetGender,
           dutyId: activeDuty?.id ?? null,
           dutyLocation: activeDuty?.location ?? null,
           title,
           description,
-          notes: notes.trim() || undefined,
         },
         user.uid
       );
@@ -108,9 +94,6 @@ export function ComplaintForm() {
       }
       setTitle("");
       setDescription("");
-      setNotes("");
-      setGroupName("");
-      setTargetType("student");
       setTargetGender("");
       setFiles([]);
       if (inputRef.current) inputRef.current.value = "";
@@ -139,32 +122,7 @@ export function ComplaintForm() {
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="grid gap-2">
-          <Label htmlFor="complaint-target">Complaint Type</Label>
-          <select
-            id="complaint-target"
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-            value={targetType}
-            onChange={(event) =>
-              setTargetType(event.target.value as "student" | "group")
-            }
-          >
-            <option value="student">Single student</option>
-            <option value="group">Group of students</option>
-          </select>
-        </div>
-        {targetType === "group" ? (
-          <div className="grid gap-2">
-            <Label htmlFor="complaint-group-name">Group Name</Label>
-            <Input
-              id="complaint-group-name"
-              value={groupName}
-              onChange={(event) => setGroupName(event.target.value)}
-              placeholder="e.g., Grade 8B, Lunch Group"
-            />
-          </div>
-        ) : null}
-        <div className="grid gap-2">
-          <Label htmlFor="complaint-gender">Gender</Label>
+          <Label htmlFor="complaint-gender">Sex</Label>
           <select
             id="complaint-gender"
             className="h-10 rounded-md border border-input bg-background px-3 text-sm"
@@ -173,19 +131,18 @@ export function ComplaintForm() {
               setTargetGender(event.target.value as any)
             }
           >
-            <option value="">Select gender</option>
+            <option value="">Select sex</option>
             <option value="male">Male</option>
             <option value="female">Female</option>
-            <option value="mixed">Mixed</option>
           </select>
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="complaint-title">Title</Label>
+          <Label htmlFor="complaint-title">Student Name</Label>
           <Input
             id="complaint-title"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            placeholder="Short summary"
+            placeholder="Student full name"
           />
         </div>
         <div className="grid gap-2">
@@ -195,15 +152,6 @@ export function ComplaintForm() {
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             placeholder="What happened?"
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="complaint-notes">Notes (optional)</Label>
-          <Input
-            id="complaint-notes"
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            placeholder="Extra details for staff"
           />
         </div>
         <div className="grid gap-2">
