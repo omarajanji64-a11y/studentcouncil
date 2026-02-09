@@ -286,7 +286,7 @@ export const updateUserGender = async (
   actorId?: string
 ) => {
   if (!auth?.currentUser) throw new Error("Firebase Auth not configured");
-  const token = await auth.currentUser.getIdToken();
+  const token = await auth.currentUser.getIdToken(true);
   const response = await fetch("/api/admin/update-user-gender", {
     method: "POST",
     headers: {

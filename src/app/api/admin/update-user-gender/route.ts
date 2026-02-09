@@ -7,6 +7,9 @@ const projectId = process.env.FIREBASE_PROJECT_ID;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const adminApp =
   getApps().length > 0
     ? getApps()[0]
@@ -71,9 +74,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error?.message || "Unable to update gender." },
-      { status: 500 }
-    );
+    console.error("update-user-gender failed", error);
+    const message = error?.message || "Unable to update sex.";
+    const status = message.toLowerCase().includes("token") ? 401 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

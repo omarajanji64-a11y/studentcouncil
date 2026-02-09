@@ -98,7 +98,7 @@ export default function MembersPage() {
   const handleGenderChange = (uid: string, gender: "male" | "female") => {
     setGenderOverrides((prev) => ({ ...prev, [uid]: gender }));
     updateUserGender(uid, gender, currentUser?.uid)
-      .catch(() => {
+      .catch((error) => {
         setGenderOverrides((prev) => {
           const next = { ...prev };
           delete next[uid];
@@ -107,7 +107,10 @@ export default function MembersPage() {
         toast({
           variant: "destructive",
           title: "Update failed",
-          description: "Could not update sex.",
+          description:
+            error instanceof Error && error.message
+              ? error.message
+              : "Could not update sex.",
         });
       });
   };
