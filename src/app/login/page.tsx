@@ -28,9 +28,17 @@ export default function LoginPage() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim() || !password.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Missing credentials",
+        description: "Enter your email and password to continue.",
+      });
+      return;
+    }
     setIsLoading("signin");
     try {
-      await signIn(email, password);
+      await signIn(email.trim(), password);
       router.push("/dashboard");
     } catch (error) {
       toast({
@@ -85,7 +93,7 @@ export default function LoginPage() {
               variables to `.env.local`.
             </div>
           )}
-          <form onSubmit={handleSignIn}>
+          <form onSubmit={handleSignIn} noValidate>
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -93,7 +101,11 @@ export default function LoginPage() {
                   id="email"
                   type="email"
                   placeholder="m.anderson@school.edu"
-                  required
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  inputMode="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={!!isLoading}
@@ -105,7 +117,7 @@ export default function LoginPage() {
                   id="password"
                   type="password"
                   placeholder="********"
-                  required
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={!!isLoading}
