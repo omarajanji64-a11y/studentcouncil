@@ -48,8 +48,8 @@ export function ComplaintForm() {
     if (!targetGender) {
       toast({
         variant: "destructive",
-        title: "Missing sex",
-        description: "Please select the student's sex.",
+        title: "Missing student type",
+        description: "Please select Boy or Girl.",
       });
       return;
     }
@@ -126,7 +126,7 @@ export function ComplaintForm() {
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="grid gap-2">
-          <Label htmlFor="complaint-gender">Sex</Label>
+          <Label htmlFor="complaint-gender">Boy / Girl</Label>
           <select
             id="complaint-gender"
             className="h-10 rounded-md border border-input bg-background px-3 text-sm"
@@ -135,9 +135,9 @@ export function ComplaintForm() {
               setTargetGender(event.target.value as any)
             }
           >
-            <option value="">Select sex</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
+            <option value="">Select Boy or Girl</option>
+            <option value="male">Boy</option>
+            <option value="female">Girl</option>
           </select>
         </div>
         <div className="grid gap-2">
