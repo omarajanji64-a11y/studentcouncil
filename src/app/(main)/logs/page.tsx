@@ -25,10 +25,13 @@ export default function LogsPage() {
   });
   const logs = staffView ? staffLogs : userLogs;
   const loading = staffView ? staffLoading : userLoading;
-  const visibleLogs = useMemo(
-    () => [...logs].sort((a, b) => b.timestamp - a.timestamp),
-    [logs]
-  );
+  const visibleLogs = useMemo(() => {
+    const sorted = [...logs].sort((a, b) => b.timestamp - a.timestamp);
+    if (staffView) return sorted;
+    return sorted.filter(
+      (log) => log.entityType === "pass" || log.entityType === "complaint"
+    );
+  }, [logs, staffView]);
 
   return (
     <div>
