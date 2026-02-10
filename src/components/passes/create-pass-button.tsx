@@ -11,7 +11,6 @@ import { createPass } from "@/hooks/use-firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { MotionModal } from "@/components/motion/motion-modal";
 import { Skeleton } from "@/components/ui/skeleton";
-import { isStaff } from "@/lib/permissions";
 import {
   Select,
   SelectContent,
@@ -105,7 +104,7 @@ export function CreatePassButton() {
     }
   };
 
-  if (!isStaff(user)) return null;
+  if (!user) return null;
 
   return (
     <MotionModal

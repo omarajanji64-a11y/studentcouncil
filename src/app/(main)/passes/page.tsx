@@ -28,11 +28,10 @@ import { format } from "date-fns";
 import { easing, durations } from "@/lib/animations";
 import { useEffect, useRef, useState } from "react";
 import { useAuth, useRequireAuth } from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
+import { isStaff } from "@/lib/permissions";
 
 export default function ActivePassesPage() {
-  useRequireAuth("supervisor");
-  const router = useRouter();
+  useRequireAuth();
   const { data: passes, loading } = useActivePasses();
   const activePasses = [...passes]
     .filter((pass) => pass.status === "active")
@@ -40,12 +39,7 @@ export default function ActivePassesPage() {
   const [recentIds, setRecentIds] = useState<Set<string>>(new Set());
   const prevIdsRef = useRef<Set<string>>(new Set());
   const { user } = useAuth();
-
-  useEffect(() => {
-    if (user && user.role === "member") {
-      router.replace("/dashboard");
-    }
-  }, [user, router]);
+  const canManage = isStaff(user);
 
   useEffect(() => {
     const current = new Set(activePasses.map((pass) => pass.id));
@@ -133,23 +127,25 @@ export default function ActivePassesPage() {
                         {pass.reason}
                       </div>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                          onClick={() => updatePassStatus(pass.id, "revoked", user?.uid)}
-                        >
-                          Revoke Pass
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {canManage ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                            onClick={() => updatePassStatus(pass.id, "revoked", user?.uid)}
+                          >
+                            Revoke Pass
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : null}
                   </div>
                   <div className="grid gap-2 text-xs text-muted-foreground">
                     <div className="flex items-center justify-between">
@@ -188,15 +184,20 @@ export default function ActivePassesPage() {
                 <TableHead className="hidden md:table-cell">Issued By</TableHead>
                 <TableHead className="hidden sm:table-cell">Issued At</TableHead>
                 <TableHead className="text-right">Expires At</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
+                {canManage ? (
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                ) : null}
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
+                  <TableCell
+                    colSpan={canManage ? 7 : 6}
+                    className="h-24 text-center"
+                  >
                     <div className="space-y-3">
                       <Skeleton className="h-4 w-2/3 mx-auto" />
                       <Skeleton className="h-4 w-1/2 mx-auto" />
@@ -267,32 +268,37 @@ export default function ActivePassesPage() {
                         <TableCell className="text-right">
                           {format(new Date(pass.expiresAt), "p")}
                         </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button aria-haspopup="true" size="icon" variant="ghost">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>View Details</DropdownMenuItem>
+                        {canManage ? (
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button aria-haspopup="true" size="icon" variant="ghost">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Toggle menu</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem>View Details</DropdownMenuItem>
                                 <DropdownMenuItem
                                   className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                                onClick={() => updatePassStatus(pass.id, "revoked", user?.uid)}
+                                  onClick={() => updatePassStatus(pass.id, "revoked", user?.uid)}
                                 >
                                   Revoke Pass
                                 </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        ) : null}
                       </motion.tr>
                     );
                   })}
                 </AnimatePresence>
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
+                  <TableCell
+                    colSpan={canManage ? 7 : 6}
+                    className="h-24 text-center"
+                  >
                     No active passes.
                   </TableCell>
                 </TableRow>
