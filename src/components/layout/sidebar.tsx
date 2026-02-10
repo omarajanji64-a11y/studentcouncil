@@ -122,9 +122,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
             <Image
               src="/student-council-logo.jpeg"
               alt="Student Council"
-              width={16}
-              height={16}
-              className="h-4 w-4 object-contain transition-transform group-hover:scale-110"
+              width={24}
+              height={24}
+              className="h-6 w-6 object-contain transition-transform group-hover:scale-110"
             />
             <span className="sr-only">Student Council</span>
           </Link>

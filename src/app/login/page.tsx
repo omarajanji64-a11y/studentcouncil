@@ -84,9 +84,9 @@ export default function LoginPage() {
             <Image
               src="/student-council-logo.jpeg"
               alt="Student Council"
-              width={40}
-              height={40}
-              className="h-10 w-10 object-contain"
+              width={48}
+              height={48}
+              className="h-12 w-12 object-contain"
             />
           </div>
           <CardTitle className="text-2xl font-bold">

@@ -99,9 +99,9 @@ export function AppHeader() {
               <Image
                 src="/student-council-logo.jpeg"
                 alt="Student Council"
-                width={20}
-                height={20}
-                className="h-5 w-5 object-contain transition-transform group-hover:scale-110"
+                width={28}
+                height={28}
+                className="h-7 w-7 object-contain transition-transform group-hover:scale-110"
               />
               <span className="sr-only">Student Council</span>
             </Link>
