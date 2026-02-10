@@ -465,6 +465,30 @@ export const clearTemporaryPasswordFlag = async (uid: string, actorId?: string) 
   });
 };
 
+export const updateUserProfileBasics = async (
+  uid: string,
+  profile: { name: string; gender: User["gender"]; mustChangePassword?: boolean }
+) => {
+  const ref = docRefs.user(uid);
+  if (!ref) throw new Error("Firestore not configured");
+  const payload: Record<string, any> = {
+    name: profile.name,
+    gender: profile.gender ?? null,
+    updatedAt: serverCreatedAt(),
+  };
+  if (typeof profile.mustChangePassword === "boolean") {
+    payload.mustChangePassword = profile.mustChangePassword;
+  }
+  await setDoc(ref, payload, { merge: true });
+  await logAction({
+    userId: uid,
+    action: "profile_updated",
+    entityType: "user",
+    entityId: uid,
+    details: { name: profile.name, gender: profile.gender ?? null },
+  });
+};
+
 export const saveNotificationToken = async (uid: string, token: string) => {
   const ref = docRefs.user(uid);
   if (!ref) throw new Error("Firestore not configured");

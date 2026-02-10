@@ -33,14 +33,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const buildFallbackUser = (fbUser: FirebaseUser, role: User["role"]): User => ({
   uid: fbUser.uid,
-  name: fbUser.displayName || "Staff Member",
+  name: fbUser.displayName || "",
   email: fbUser.email || "unknown@school.edu",
   role,
   avatar: fbUser.photoURL || "https://picsum.photos/seed/100/40/40",
   notificationsEnabled: false,
   canEditSchedule: role !== "member",
   lastNotificationReadAt: 0,
-  mustChangePassword: false,
+  mustChangePassword: true,
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -90,7 +90,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   notificationsEnabled: fallback.notificationsEnabled ?? false,
                   canEditSchedule: fallback.canEditSchedule ?? false,
                   lastNotificationReadAt: fallback.lastNotificationReadAt ?? 0,
-                  mustChangePassword: false,
+                  mustChangePassword: true,
+                  gender: null,
                 });
               } catch {
                 // Ignore profile creation errors; use fallback user.

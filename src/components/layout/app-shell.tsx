@@ -9,7 +9,7 @@ import { useRequireAuth } from "@/hooks/use-auth";
 import { Skeleton } from "../ui/skeleton";
 import { PageWrapper } from "@/components/motion/page-wrapper";
 import { BreaksProvider } from "@/hooks/use-break-status";
-import { PasswordChangeGuard } from "@/components/auth/password-change-guard";
+import { ProfileSetupGuard } from "@/components/auth/profile-setup-guard";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, loading } = useRequireAuth();
@@ -41,7 +41,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
         <MobileNav user={user} />
-        <PasswordChangeGuard />
+        <ProfileSetupGuard />
       </BreaksProvider>
     </SidebarProvider>
   );
