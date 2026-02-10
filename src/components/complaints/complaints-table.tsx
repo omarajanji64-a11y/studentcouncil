@@ -27,6 +27,7 @@ import { updateComplaint } from "@/hooks/use-firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { isSupervisor } from "@/lib/permissions";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 const statusOptions: Complaint["status"][] = ["Open", "In Progress", "Resolved"];
 
@@ -42,6 +43,7 @@ export function ComplaintsTable({
   staffView?: boolean;
 }) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [filter, setFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<Complaint["status"][]>([]);
   const [dutyFilter, setDutyFilter] = useState<string[]>([]);
@@ -102,17 +104,33 @@ export function ComplaintsTable({
 
   const handleUpdate = async () => {
     if (!activeComplaint || !user) return;
-    await updateComplaint(
-      activeComplaint.id,
-      {
-        status,
-        handledBy: user.name,
-        handledById: user.uid,
-        studentId: activeComplaint.studentId,
-      },
-      user.uid
-    );
-    setActiveComplaint(null);
+    try {
+      await updateComplaint(
+        activeComplaint.id,
+        {
+          status,
+          handledBy: user.name,
+          handledById: user.uid,
+          studentId: activeComplaint.studentId,
+        },
+        user.uid
+      );
+      setActiveComplaint(null);
+      toast({
+        title: "Complaint updated",
+        description: "Status has been saved.",
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Unable to update the complaint.";
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: message,
+      });
+    }
   };
 
   return (
