@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Student Council",
-    short_name: "Council",
+    short_name: "Student Council",
     description: "Student council operations and notifications.",
     start_url: "/",
     display: "standalone",

@@ -81,7 +81,7 @@ export default function NotificationsPage() {
                 <Label htmlFor="title">Title</Label>
                 <Input
                   id="title"
-                  placeholder="e.g., Canteen Update"
+                  placeholder="e.g., Council Update"
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
                 />

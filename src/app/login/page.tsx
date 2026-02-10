@@ -84,7 +84,7 @@ export default function LoginPage() {
             <Ticket className="h-8 w-8" />
           </div>
           <CardTitle className="text-2xl font-bold">
-            Canteen Control Center
+            Student Council
           </CardTitle>
           <CardDescription>
             Staff sign-in. This is a restricted internal tool.

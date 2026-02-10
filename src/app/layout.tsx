@@ -7,11 +7,11 @@ import { Providers } from '@/components/providers';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Canteen Control Center',
-  description: 'Internal tool for managing student canteen passes.',
+  title: 'Student Council',
+  description: 'Internal tool for managing student council operations.',
   appleWebApp: {
     capable: true,
-    title: "Canteen Control Center",
+    title: "Student Council",
     statusBarStyle: "default",
   },
 };

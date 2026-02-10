@@ -74,7 +74,7 @@ export default function ActivePassesPage() {
     <div>
       <PageHeader
         title="Active Passes"
-        description="A live view of all currently active canteen passes."
+        description="A live view of all currently active passes."
       >
         <div className="flex flex-wrap items-center gap-2">
           <DropdownMenu>

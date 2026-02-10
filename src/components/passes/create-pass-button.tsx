@@ -89,7 +89,7 @@ export function CreatePassButton() {
       setReason("");
       toast({
         title: "Pass Created",
-        description: "A new canteen pass has been successfully issued.",
+        description: "A new pass has been successfully issued.",
       });
     } catch (error) {
       setIsCreating(false);
@@ -117,7 +117,7 @@ export function CreatePassButton() {
           <span className="hidden sm:inline">Create Pass</span>
         </Button>
       }
-      title="Issue New Canteen Pass"
+      title="Issue New Pass"
       description={
         passType === "active_break"
           ? isBreakActive

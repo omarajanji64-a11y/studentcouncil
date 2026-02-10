@@ -72,7 +72,7 @@ export function AppHeader() {
 
   const pageTitle =
     navLinks.find((link) => pathname.startsWith(link.href))?.label ||
-    "Canteen Control";
+    "Student Council";
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
@@ -90,7 +90,7 @@ export function AppHeader() {
               className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
             >
               <Ticket className="h-5 w-5 transition-all group-hover:scale-110" />
-              <span className="sr-only">Canteen Control</span>
+              <span className="sr-only">Student Council</span>
             </Link>
             {navLinks.map(
               (link) =>
@@ -118,7 +118,7 @@ export function AppHeader() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/dashboard">Canteen Control</Link>
+              <Link href="/dashboard">Student Council</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
