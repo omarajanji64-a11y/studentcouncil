@@ -13,14 +13,18 @@ import { AnimatedCard } from "@/components/motion/animated-card";
 import { AnimatedList } from "@/components/motion/animated-list";
 import { useAuth } from "@/hooks/use-auth";
 import { isStaff } from "@/lib/permissions";
-import { useComplaints, useDuties, usePasses } from "@/hooks/use-firestore";
+import { useActivePasses, useComplaints, useDuties } from "@/hooks/use-firestore";
 import { format } from "date-fns";
 import { DutyTable } from "@/components/schedule/duty-table";
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { data: passes } = usePasses();
-  const { data: complaints } = useComplaints();
+  const staffView = isStaff(user);
+  const { data: passes } = useActivePasses();
+  const { data: complaints } = useComplaints({
+    studentId: staffView ? undefined : user?.uid,
+    enabled: !!user,
+  });
   const { data: duties } = useDuties();
 
   const activePassPreview = passes
@@ -28,7 +32,7 @@ export default function DashboardPage() {
     .sort((a, b) => b.issuedAt - a.issuedAt)
     .slice(0, 3);
 
-  const visibleComplaints = isStaff(user)
+  const visibleComplaints = staffView
     ? complaints
     : complaints.filter((complaint) => complaint.studentId === user?.uid);
 

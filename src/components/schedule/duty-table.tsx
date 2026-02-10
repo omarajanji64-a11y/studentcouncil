@@ -11,9 +11,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import {
-  useBreaksPolling,
-  useDutiesPolling,
-  useUsersPolling,
+  useBreaks,
+  useDuties,
+  useUsers,
   createDuty,
   updateDuty,
   deleteDuty,
@@ -55,10 +55,10 @@ type EditCell = {
 export function DutyTable() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { data: breaks, loading: breaksLoading } = useBreaksPolling();
-  const { data: duties } = useDutiesPolling();
+  const { data: breaks, loading: breaksLoading } = useBreaks();
+  const { data: duties } = useDuties();
   const allowUserList = isStaff(user) || user?.canEditSchedule;
-  const { data: users } = useUsersPolling(allowUserList);
+  const { data: users } = useUsers(allowUserList);
   const [activeCell, setActiveCell] = useState<EditCell | null>(null);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState(false);

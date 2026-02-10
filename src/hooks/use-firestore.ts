@@ -9,11 +9,13 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  limit,
   onSnapshot,
   orderBy,
   query,
   setDoc,
   updateDoc,
+  where,
   writeBatch,
   type DocumentData,
   type Query,
@@ -140,19 +142,60 @@ export const useUsersPolling = (enabled = true, intervalMs = 10000) => {
   return usePollingCollection<User>(q, converters.user.fromFirestore, intervalMs);
 };
 
-export const usePasses = () => {
+type PassQueryOptions = {
+  status?: Pass["status"];
+  enabled?: boolean;
+};
+
+export const usePasses = (options: PassQueryOptions = {}) => {
+  const { status, enabled = true } = options;
   const q = useMemo(() => {
+    if (!enabled) return null;
     const col = collections.passes();
-    return col ? query(col, orderBy("issuedAt", "desc")) : null;
-  }, []);
+    if (!col) return null;
+    const constraints = [];
+    if (status) constraints.push(where("status", "==", status));
+    if (!constraints.length) {
+      return query(col, orderBy("issuedAt", "desc"));
+    }
+    return query(col, ...constraints);
+  }, [status, enabled]);
   return useRealtimeCollection<Pass>(q, converters.pass.fromFirestore);
 };
 
-export const useLogs = () => {
+export const useActivePasses = (enabled = true) =>
+  usePasses({ status: "active", enabled });
+
+type LogQueryOptions = {
+  enabled?: boolean;
+  limit?: number;
+  sinceMs?: number;
+};
+
+export const useLogs = (options: LogQueryOptions = {}) => {
+  const { enabled = true, limit: limitCount, sinceMs } = options;
   const q = useMemo(() => {
+    if (!enabled) return null;
     const col = collections.logs();
-    return col ? query(col, orderBy("timestamp", "desc")) : null;
-  }, []);
+    if (!col) return null;
+    const constraints = [];
+    if (typeof sinceMs === "number") {
+      constraints.push(where("timestamp", ">=", Timestamp.fromMillis(sinceMs)));
+    }
+    constraints.push(orderBy("timestamp", "desc"));
+    if (limitCount) constraints.push(limit(limitCount));
+    return query(col, ...constraints);
+  }, [enabled, sinceMs, limitCount]);
+  return useRealtimeCollection<Log>(q, converters.log.fromFirestore);
+};
+
+export const useUserLogs = (uid?: string, enabled = true) => {
+  const q = useMemo(() => {
+    if (!enabled || !uid) return null;
+    const col = collections.logs();
+    if (!col) return null;
+    return query(col, where("userId", "==", uid));
+  }, [uid, enabled]);
   return useRealtimeCollection<Log>(q, converters.log.fromFirestore);
 };
 
@@ -172,12 +215,16 @@ export const useBreaksPolling = (intervalMs = 10000) => {
   return usePollingCollection<Break>(q, converters.breakItem.fromFirestore, intervalMs);
 };
 
-export const useNotifications = (enabled = true) => {
+export const useNotifications = (enabled = true, limitCount = 50) => {
   const q = useMemo(() => {
     if (!enabled) return null;
     const col = collections.notifications();
-    return col ? query(col, orderBy("createdAt", "desc")) : null;
-  }, [enabled]);
+    if (!col) return null;
+    if (limitCount) {
+      return query(col, orderBy("createdAt", "desc"), limit(limitCount));
+    }
+    return query(col, orderBy("createdAt", "desc"));
+  }, [enabled, limitCount]);
   return useRealtimeCollection<Notification>(
     q,
     converters.notification.fromFirestore
@@ -200,11 +247,22 @@ export const useDutiesPolling = (intervalMs = 10000) => {
   return usePollingCollection<Duty>(q, converters.duty.fromFirestore, intervalMs);
 };
 
-export const useComplaints = () => {
+type ComplaintQueryOptions = {
+  studentId?: string;
+  enabled?: boolean;
+};
+
+export const useComplaints = (options: ComplaintQueryOptions = {}) => {
+  const { studentId, enabled = true } = options;
   const q = useMemo(() => {
+    if (!enabled) return null;
     const col = collections.complaints();
-    return col ? query(col) : null;
-  }, []);
+    if (!col) return null;
+    if (studentId) {
+      return query(col, where("studentId", "==", studentId));
+    }
+    return query(col);
+  }, [studentId, enabled]);
   return useRealtimeCollection<Complaint>(q, converters.complaint.fromFirestore);
 };
 

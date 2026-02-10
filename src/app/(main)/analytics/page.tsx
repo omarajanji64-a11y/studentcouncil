@@ -3,15 +3,17 @@
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRequireAuth } from "@/hooks/use-auth";
-import { useComplaints, useDuties, useLogs, usePasses } from "@/hooks/use-firestore";
+import { useActivePasses, useComplaints, useDuties, useLogs } from "@/hooks/use-firestore";
 import { isAdmin } from "@/lib/permissions";
+import { useMemo } from "react";
 
 export default function AnalyticsPage() {
   const { user } = useRequireAuth("admin");
   const { data: complaints } = useComplaints();
-  const { data: passes } = usePasses();
+  const { data: passes } = useActivePasses();
   const { data: duties } = useDuties();
-  const { data: logs } = useLogs();
+  const sinceMs = useMemo(() => Date.now() - 24 * 60 * 60 * 1000, []);
+  const { data: logs } = useLogs({ sinceMs });
 
   if (!isAdmin(user)) return null;
 

@@ -5,14 +5,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ComplaintForm } from "@/components/complaints/complaint-form";
 import { ComplaintsTable } from "@/components/complaints/complaints-table";
 import { useAuth } from "@/hooks/use-auth";
-import { useComplaintsPolling, useDutiesPolling } from "@/hooks/use-firestore";
+import { useComplaints, useDuties } from "@/hooks/use-firestore";
 import { isStaff } from "@/lib/permissions";
 
 export default function ComplaintsPage() {
   const { user } = useAuth();
-  const { data: complaints, loading, refresh } = useComplaintsPolling();
-  const { data: duties } = useDutiesPolling();
   const staffView = isStaff(user);
+  const { data: complaints, loading } = useComplaints({
+    studentId: staffView ? undefined : user?.uid,
+    enabled: !!user,
+  });
+  const { data: duties } = useDuties();
   if (!user) return null;
   const visibleComplaints = staffView
     ? complaints
@@ -32,7 +35,6 @@ export default function ComplaintsPage() {
             duties={duties}
             loading={loading}
             staffView={staffView}
-            onRefresh={refresh}
           />
         </CardContent>
       </Card>

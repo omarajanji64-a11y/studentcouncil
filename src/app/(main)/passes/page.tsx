@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, File, ListFilter, MoreHorizontal } from "lucide-react";
-import { usePasses, updatePassStatus } from "@/hooks/use-firestore";
+import { useActivePasses, updatePassStatus } from "@/hooks/use-firestore";
 import { format } from "date-fns";
 import { easing, durations } from "@/lib/animations";
 import { useEffect, useRef, useState } from "react";
@@ -33,8 +33,10 @@ import { useRouter } from "next/navigation";
 export default function ActivePassesPage() {
   useRequireAuth("supervisor");
   const router = useRouter();
-  const { data: passes, loading } = usePasses();
-  const activePasses = passes.filter((pass) => pass.status === "active");
+  const { data: passes, loading } = useActivePasses();
+  const activePasses = [...passes]
+    .filter((pass) => pass.status === "active")
+    .sort((a, b) => b.issuedAt - a.issuedAt);
   const [recentIds, setRecentIds] = useState<Set<string>>(new Set());
   const prevIdsRef = useRef<Set<string>>(new Set());
   const { user } = useAuth();

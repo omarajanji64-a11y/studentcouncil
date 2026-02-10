@@ -6,16 +6,28 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { LogsTable } from "@/components/logs/logs-table";
-import { useLogs } from "@/hooks/use-firestore";
+import { useLogs, useUserLogs } from "@/hooks/use-firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { isStaff } from "@/lib/permissions";
+import { useMemo } from "react";
 
 export default function LogsPage() {
-  const { data: logs, loading } = useLogs();
   const { user } = useAuth();
-  const visibleLogs = isStaff(user)
-    ? logs
-    : logs.filter((log) => log.userId === user?.uid);
+  const staffView = isStaff(user);
+  const { data: staffLogs, loading: staffLoading } = useLogs({
+    limit: 200,
+    enabled: staffView,
+  });
+  const { data: userLogs, loading: userLoading } = useUserLogs(
+    user?.uid,
+    !!user && !staffView
+  );
+  const logs = staffView ? staffLogs : userLogs;
+  const loading = staffView ? staffLoading : userLoading;
+  const visibleLogs = useMemo(
+    () => [...logs].sort((a, b) => b.timestamp - a.timestamp),
+    [logs]
+  );
 
   return (
     <div>
