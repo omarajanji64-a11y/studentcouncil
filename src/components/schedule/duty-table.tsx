@@ -119,19 +119,26 @@ export function DutyTable({ duties: providedDuties, realtime }: DutyTableProps) 
     return assignments;
   }, [dutyMap, sortedBreaks]);
 
+  const effectiveLocationFilter = useMemo(() => {
+    if (!isStaff(user)) {
+      return user?.gender === "male" ? "boys" : user?.gender === "female" ? "girls" : "all";
+    }
+    return locationFilter;
+  }, [locationFilter, user]);
+
   const visibleLocations = useMemo(() => {
-    if (locationFilter === "boys") {
+    if (effectiveLocationFilter === "boys") {
       return dutyLocations.filter((location) =>
         location.toLowerCase().includes("boys")
       );
     }
-    if (locationFilter === "girls") {
+    if (effectiveLocationFilter === "girls") {
       return dutyLocations.filter((location) =>
         location.toLowerCase().includes("girls")
       );
     }
     return dutyLocations;
-  }, [locationFilter]);
+  }, [effectiveLocationFilter]);
 
   const openEditor = (breakId: string, location: string) => {
     if (!canEdit) return;
@@ -252,29 +259,35 @@ export function DutyTable({ duties: providedDuties, realtime }: DutyTableProps) 
         ) : null}
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            size="sm"
-            variant={locationFilter === "all" ? "default" : "outline"}
-            onClick={() => setLocationFilter("all")}
-          >
-            All
-          </Button>
-          <Button
-            size="sm"
-            variant={locationFilter === "boys" ? "default" : "outline"}
-            onClick={() => setLocationFilter("boys")}
-          >
-            Boys
-          </Button>
-          <Button
-            size="sm"
-            variant={locationFilter === "girls" ? "default" : "outline"}
-            onClick={() => setLocationFilter("girls")}
-          >
-            Girls
-          </Button>
-        </div>
+        {isStaff(user) ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant={locationFilter === "all" ? "default" : "outline"}
+              onClick={() => setLocationFilter("all")}
+            >
+              All
+            </Button>
+            <Button
+              size="sm"
+              variant={locationFilter === "boys" ? "default" : "outline"}
+              onClick={() => setLocationFilter("boys")}
+            >
+              Boys
+            </Button>
+            <Button
+              size="sm"
+              variant={locationFilter === "girls" ? "default" : "outline"}
+              onClick={() => setLocationFilter("girls")}
+            >
+              Girls
+            </Button>
+          </div>
+        ) : (
+          <div className="text-xs text-muted-foreground">
+            Showing {effectiveLocationFilter === "boys" ? "Boys" : "Girls"} locations.
+          </div>
+        )}
         <Tabs defaultValue={isStaff(user) ? "all" : "personal"}>
           <TabsList>
             <TabsTrigger value="personal">Personal View</TabsTrigger>
