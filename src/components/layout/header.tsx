@@ -30,6 +30,7 @@ import {
   Send,
   MessageSquare,
   BarChart3,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -50,6 +51,12 @@ const navLinks = [
     href: "/schedule",
     icon: CalendarClock,
     label: "Schedule",
+  },
+  {
+    href: "/breaks",
+    icon: Clock,
+    label: "Breaks",
+    role: "staff",
   },
   { href: "/members", icon: Users, label: "Manage Members", role: "staff" },
   {

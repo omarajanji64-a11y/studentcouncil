@@ -20,6 +20,7 @@ import {
   Send,
   MessageSquare,
   BarChart3,
+  Clock,
 } from "lucide-react";
 import type { User } from "@/lib/types";
 import { useAuth } from "@/hooks/use-auth";
@@ -122,6 +123,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           </Link>
           {navLinks.map((link) => renderLink(link))}
           {renderLink({ href: "/schedule", icon: CalendarClock, label: "Schedule" })}
+          {renderLink({ href: "/breaks", icon: Clock, label: "Breaks", role: "staff" })}
           {isStaff(user) && supervisorLinks.map((link) => renderLink(link))}
         </nav>
         <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">

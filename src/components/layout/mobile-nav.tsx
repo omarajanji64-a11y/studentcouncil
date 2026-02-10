@@ -11,6 +11,7 @@ import {
   Send,
   MessageSquare,
   BarChart3,
+  Clock,
 } from "lucide-react";
 import type { User } from "@/lib/types";
 import { motion } from "framer-motion";
@@ -25,6 +26,7 @@ const navLinks = [
   { href: "/logs", icon: ScrollText, label: "Logs" },
   { href: "/analytics", icon: BarChart3, label: "Analytics", role: "admin" },
   { href: "/schedule", icon: CalendarClock, label: "Schedule" },
+  { href: "/breaks", icon: Clock, label: "Breaks", role: "staff" },
   { href: "/members", icon: Users, label: "Members", role: "staff" },
   { href: "/notifications", icon: Send, label: "Notify", role: "staff" },
 ];
