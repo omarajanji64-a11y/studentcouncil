@@ -78,6 +78,7 @@ export async function POST(request: Request) {
         avatar: null,
         notificationsEnabled: false,
         canEditSchedule: false,
+        lastNotificationReadAt: null,
         updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true }

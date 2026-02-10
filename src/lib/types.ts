@@ -7,6 +7,7 @@ export type User = {
   avatar?: string;
   notificationsEnabled?: boolean;
   canEditSchedule?: boolean;
+  lastNotificationReadAt?: number;
 };
 
 export type Break = {

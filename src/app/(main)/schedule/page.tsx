@@ -3,9 +3,11 @@
 import { PageHeader } from "@/components/shared/page-header";
 import { DutyTable } from "@/components/schedule/duty-table";
 import { useRequireAuth } from "@/hooks/use-auth";
+import { isStaff } from "@/lib/permissions";
 
 export default function SchedulePage() {
-  useRequireAuth();
+  const { user } = useRequireAuth();
+  const realtime = isStaff(user);
 
   return (
     <div>
@@ -14,7 +16,7 @@ export default function SchedulePage() {
         description="Manage duty shifts and assignments."
       />
       <div className="mb-6">
-        <DutyTable />
+        <DutyTable realtime={realtime} />
       </div>
     </div>
   );

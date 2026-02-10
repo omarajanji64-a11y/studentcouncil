@@ -11,11 +11,12 @@ import { isStaff } from "@/lib/permissions";
 export default function ComplaintsPage() {
   const { user } = useAuth();
   const staffView = isStaff(user);
-  const { data: complaints, loading } = useComplaints({
+  const { data: complaints, loading, refresh } = useComplaints({
     studentId: staffView ? undefined : user?.uid,
     enabled: !!user,
+    realtime: staffView,
   });
-  const { data: duties } = useDuties();
+  const { data: duties } = useDuties({ realtime: staffView });
   if (!user) return null;
   const visibleComplaints = staffView
     ? complaints
@@ -35,6 +36,7 @@ export default function ComplaintsPage() {
             duties={duties}
             loading={loading}
             staffView={staffView}
+            onRefresh={refresh}
           />
         </CardContent>
       </Card>

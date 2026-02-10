@@ -18,24 +18,28 @@ import { ScrollArea } from "../ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   markNotificationsRead,
-  useNotificationReads,
   useNotifications,
 } from "@/hooks/use-firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { easing, durations } from "@/lib/animations";
+import { isStaff } from "@/lib/permissions";
 
 export function NotificationBell() {
   const { user } = useAuth();
   const notificationsEnabled = user?.notificationsEnabled ?? false;
-  const { data: notifications, loading } = useNotifications(notificationsEnabled);
-  const { data: reads } = useNotificationReads(user?.uid);
+  const realtime = isStaff(user);
+  const { data: notifications, loading } = useNotifications(
+    notificationsEnabled,
+    50,
+    realtime
+  );
   const [open, setOpen] = useState(false);
-
-  const readIds = useMemo(() => new Set(reads.map((read) => read.id)), [reads]);
-  const unreadNotifications = notifications.filter(
-    (notification) => !readIds.has(notification.id)
+  const lastReadAt = user?.lastNotificationReadAt ?? 0;
+  const unreadNotifications = useMemo(
+    () => notifications.filter((notification) => notification.createdAt > lastReadAt),
+    [notifications, lastReadAt]
   );
   const unreadCount = unreadNotifications.length;
 
@@ -44,7 +48,7 @@ export function NotificationBell() {
     if (nextOpen && user && notificationsEnabled && unreadNotifications.length) {
       markNotificationsRead(
         user.uid,
-        unreadNotifications.map((notification) => notification.id),
+        unreadNotifications.length,
         user.uid
       ).catch(() => {
         // Ignore read tracking failures for now.
@@ -104,12 +108,12 @@ export function NotificationBell() {
                         exit={{ opacity: 0, y: 8 }}
                         transition={{ duration: durations.base, ease: easing }}
                         className={`flex items-start gap-4 ${
-                          readIds.has(notification.id) ? "" : "font-semibold"
+                          notification.createdAt <= lastReadAt ? "" : "font-semibold"
                         }`}
                       >
                         <div
                           className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                            readIds.has(notification.id)
+                            notification.createdAt <= lastReadAt
                               ? "bg-transparent"
                               : "bg-primary"
                           }`}

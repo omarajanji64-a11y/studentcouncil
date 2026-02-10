@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, createContext, useContext } from "react";
+import type { ReactNode } from "react";
 import type { Break } from "@/lib/types";
 import { useBreaks } from "@/hooks/use-firestore";
-import { logAction } from "@/lib/logging";
+import { useAuth } from "@/hooks/use-auth";
+import { isStaff } from "@/lib/permissions";
 
 interface BreakStatus {
   activeBreak: Break | null;
@@ -12,16 +14,42 @@ interface BreakStatus {
   loading: boolean;
 }
 
+type BreaksContextValue = {
+  breaks: Break[];
+  loading: boolean;
+  error: string | null;
+};
+
+const BreaksContext = createContext<BreaksContextValue | null>(null);
+
+export function BreaksProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const realtime = isStaff(user);
+  const { data: breaks, loading, error } = useBreaks({ enabled: !!user, realtime });
+  const value = useMemo(
+    () => ({ breaks, loading, error }),
+    [breaks, loading, error]
+  );
+
+  return <BreaksContext.Provider value={value}>{children}</BreaksContext.Provider>;
+}
+
+export const useBreaksData = () => {
+  const context = useContext(BreaksContext);
+  if (!context) {
+    throw new Error("useBreaksData must be used within BreaksProvider");
+  }
+  return context;
+};
+
 export const useBreakStatus = (): BreakStatus => {
-  const { data: breaks, loading } = useBreaks();
+  const { breaks, loading } = useBreaksData();
   const [status, setStatus] = useState<BreakStatus>({
     activeBreak: null,
     timeRemaining: 0,
     isBreakActive: false,
     loading: true,
   });
-  const lastBreakId = useRef<string | null>(null);
-  const lastActive = useRef<boolean>(false);
 
   useEffect(() => {
     if (loading) {
@@ -51,29 +79,6 @@ export const useBreakStatus = (): BreakStatus => {
           isBreakActive: false,
           loading: false,
         });
-      }
-
-      if (currentBreak && (!lastActive.current || lastBreakId.current !== currentBreak.id)) {
-        logAction({
-          userId: "system",
-          action: "break_started",
-          entityType: "break",
-          entityId: currentBreak.id,
-          details: { name: currentBreak.name },
-        });
-        lastActive.current = true;
-        lastBreakId.current = currentBreak.id;
-      }
-
-      if (!currentBreak && lastActive.current) {
-        logAction({
-          userId: "system",
-          action: "break_ended",
-          entityType: "break",
-          entityId: lastBreakId.current ?? "",
-        });
-        lastActive.current = false;
-        lastBreakId.current = null;
       }
     };
 

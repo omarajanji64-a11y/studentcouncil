@@ -11,13 +11,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import {
-  useBreaks,
   useDuties,
   useUsers,
   createDuty,
   updateDuty,
   deleteDuty,
 } from "@/hooks/use-firestore";
+import { useBreaksData } from "@/hooks/use-break-status";
 import { canEditSchedule, isStaff } from "@/lib/permissions";
 import type { Duty } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -52,13 +52,24 @@ type EditCell = {
   duty?: Duty;
 };
 
-export function DutyTable() {
+type DutyTableProps = {
+  duties?: Duty[];
+  realtime?: boolean;
+};
+
+export function DutyTable({ duties: providedDuties, realtime }: DutyTableProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { data: breaks, loading: breaksLoading } = useBreaks();
-  const { data: duties } = useDuties();
+  const effectiveRealtime = realtime ?? isStaff(user);
+  const { breaks, loading: breaksLoading } = useBreaksData();
+  const { data: duties } = providedDuties
+    ? { data: providedDuties }
+    : useDuties({ realtime: effectiveRealtime });
   const allowUserList = isStaff(user) || user?.canEditSchedule;
-  const { data: users } = useUsers(allowUserList);
+  const { data: users } = useUsers({
+    enabled: allowUserList,
+    realtime: effectiveRealtime,
+  });
   const [activeCell, setActiveCell] = useState<EditCell | null>(null);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState(false);

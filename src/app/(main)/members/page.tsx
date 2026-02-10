@@ -47,7 +47,7 @@ import { useState } from "react";
 
 export default function MembersPage() {
   const { user: currentUser } = useRequireAuth("supervisor");
-  const { data: users, loading } = useUsers();
+  const { data: users, loading } = useUsers({ enabled: !!currentUser, realtime: true });
   const sortedUsers = [...users].sort((a, b) =>
     (a.name || "").localeCompare(b.name || "")
   );

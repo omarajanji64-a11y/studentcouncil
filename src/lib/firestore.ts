@@ -52,6 +52,7 @@ export const converters = {
         avatar: data.avatar ?? undefined,
         notificationsEnabled: data.notificationsEnabled ?? false,
         canEditSchedule: data.canEditSchedule ?? false,
+        lastNotificationReadAt: toMillis(data.lastNotificationReadAt, 0),
       };
     },
   },

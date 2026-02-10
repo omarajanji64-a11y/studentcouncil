@@ -32,8 +32,8 @@ import {
   createBreak,
   deleteBreak,
   updateBreak,
-  useBreaks,
 } from "@/hooks/use-firestore";
+import { useBreaksData } from "@/hooks/use-break-status";
 import { useAuth, useRequireAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { isStaff } from "@/lib/permissions";
@@ -42,7 +42,7 @@ export default function BreaksPage() {
   useRequireAuth();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { data: breaks, loading, error } = useBreaks();
+  const { breaks, loading, error } = useBreaksData();
   const sortedBreaks = [...breaks].sort((a, b) => a.startTime - b.startTime);
   const [isOpen, setIsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);

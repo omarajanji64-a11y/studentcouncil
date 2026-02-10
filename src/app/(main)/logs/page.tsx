@@ -17,11 +17,12 @@ export default function LogsPage() {
   const { data: staffLogs, loading: staffLoading } = useLogs({
     limit: 200,
     enabled: staffView,
+    realtime: staffView,
   });
-  const { data: userLogs, loading: userLoading } = useUserLogs(
-    user?.uid,
-    !!user && !staffView
-  );
+  const { data: userLogs, loading: userLoading } = useUserLogs(user?.uid, {
+    enabled: !!user && !staffView,
+    realtime: false,
+  });
   const logs = staffView ? staffLogs : userLogs;
   const loading = staffView ? staffLoading : userLoading;
   const visibleLogs = useMemo(

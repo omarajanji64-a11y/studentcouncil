@@ -9,11 +9,11 @@ import { useMemo } from "react";
 
 export default function AnalyticsPage() {
   const { user } = useRequireAuth("admin");
-  const { data: complaints } = useComplaints();
+  const { data: complaints } = useComplaints({ realtime: true });
   const { data: passes } = useActivePasses();
-  const { data: duties } = useDuties();
+  const { data: duties } = useDuties({ realtime: true });
   const sinceMs = useMemo(() => Date.now() - 24 * 60 * 60 * 1000, []);
-  const { data: logs } = useLogs({ sinceMs });
+  const { data: logs } = useLogs({ sinceMs, realtime: true });
 
   if (!isAdmin(user)) return null;
 

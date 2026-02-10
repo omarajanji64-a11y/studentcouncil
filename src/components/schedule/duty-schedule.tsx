@@ -25,9 +25,10 @@ type EditorState = {
 const buildDateKey = (date: Date) => format(date, "yyyy-MM-dd");
 
 export function DutyScheduleEditor() {
-  const { data: duties, loading } = useDuties();
-  const { data: users } = useUsers();
   const { user } = useAuth();
+  const staff = isStaff(user);
+  const { data: duties, loading } = useDuties({ enabled: !!user, realtime: staff });
+  const { data: users } = useUsers({ enabled: staff, realtime: staff });
   const { toast } = useToast();
   const [view, setView] = useState<"day" | "week" | "month">("week");
   const [anchorDate, setAnchorDate] = useState(() => new Date());
@@ -36,8 +37,6 @@ export function DutyScheduleEditor() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [memberIds, setMemberIds] = useState<string[]>([]);
-
-  const staff = isStaff(user);
 
   const memberOptions = useMemo(
     () => users.map((member) => ({ id: member.uid, name: member.name })),

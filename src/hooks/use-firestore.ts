@@ -5,9 +5,7 @@ import {
   Timestamp,
   addDoc,
   arrayUnion,
-  collection,
   deleteDoc,
-  doc,
   getDocs,
   limit,
   onSnapshot,
@@ -16,13 +14,12 @@ import {
   setDoc,
   updateDoc,
   where,
-  writeBatch,
   type DocumentData,
   type Query,
 } from "firebase/firestore";
 import type { Break, Complaint, Duty, Log, Notification, Pass, User } from "@/lib/types";
 import { collections, converters, docRefs, serverCreatedAt } from "@/lib/firestore";
-import { auth, db } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 import { logAction } from "@/lib/logging";
 
 type LoadingState<T> = {
@@ -32,15 +29,17 @@ type LoadingState<T> = {
   refresh?: () => void;
 };
 
-const useRealtimeCollection = <T,>(
+const useCollection = <T,>(
   q: Query<DocumentData> | null,
-  mapDoc: (snap: any) => T
+  mapDoc: (snap: any) => T,
+  realtime = true
 ): LoadingState<T> => {
   const [state, setState] = useState<LoadingState<T>>({
     data: [],
     loading: true,
     error: null,
   });
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     if (!q) {
@@ -48,24 +47,61 @@ const useRealtimeCollection = <T,>(
       return;
     }
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
+    let active = true;
+    let unsubscribe: (() => void) | null = null;
+
+    const runOnce = async () => {
+      setState((prev) => ({ ...prev, loading: true, error: null }));
+      try {
+        const snapshot = await getDocs(q);
+        if (!active) return;
         setState({
           data: snapshot.docs.map((doc) => mapDoc(doc)),
           loading: false,
           error: null,
         });
-      },
-      (error) => {
-        setState({ data: [], loading: false, error: error.message });
+      } catch (error) {
+        if (!active) return;
+        const message =
+          error instanceof Error ? error.message : "Failed to load data.";
+        setState((prev) => ({
+          data: prev.data,
+          loading: false,
+          error: message,
+        }));
       }
-    );
+    };
 
-    return () => unsubscribe();
-  }, [q, mapDoc]);
+    if (realtime) {
+      unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          if (!active) return;
+          setState({
+            data: snapshot.docs.map((doc) => mapDoc(doc)),
+            loading: false,
+            error: null,
+          });
+        },
+        (error) => {
+          if (!active) return;
+          setState({ data: [], loading: false, error: error.message });
+        }
+      );
+    } else {
+      runOnce();
+    }
 
-  return state;
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
+  }, [q, mapDoc, realtime, refreshTick]);
+
+  return {
+    ...state,
+    refresh: realtime ? undefined : () => setRefreshTick((prev) => prev + 1),
+  };
 };
 
 const usePollingCollection = <T,>(
@@ -124,13 +160,19 @@ const usePollingCollection = <T,>(
   };
 };
 
-export const useUsers = (enabled = true) => {
+type BaseQueryOptions = {
+  enabled?: boolean;
+  realtime?: boolean;
+};
+
+export const useUsers = (options: BaseQueryOptions = {}) => {
+  const { enabled = true, realtime = true } = options;
   const q = useMemo(() => {
     if (!enabled) return null;
     const col = collections.users();
     return col ? query(col) : null;
   }, [enabled]);
-  return useRealtimeCollection<User>(q, converters.user.fromFirestore);
+  return useCollection<User>(q, converters.user.fromFirestore, realtime);
 };
 
 export const useUsersPolling = (enabled = true, intervalMs = 10000) => {
@@ -145,10 +187,11 @@ export const useUsersPolling = (enabled = true, intervalMs = 10000) => {
 type PassQueryOptions = {
   status?: Pass["status"];
   enabled?: boolean;
+  realtime?: boolean;
 };
 
 export const usePasses = (options: PassQueryOptions = {}) => {
-  const { status, enabled = true } = options;
+  const { status, enabled = true, realtime = true } = options;
   const q = useMemo(() => {
     if (!enabled) return null;
     const col = collections.passes();
@@ -160,20 +203,21 @@ export const usePasses = (options: PassQueryOptions = {}) => {
     }
     return query(col, ...constraints);
   }, [status, enabled]);
-  return useRealtimeCollection<Pass>(q, converters.pass.fromFirestore);
+  return useCollection<Pass>(q, converters.pass.fromFirestore, realtime);
 };
 
-export const useActivePasses = (enabled = true) =>
-  usePasses({ status: "active", enabled });
+export const useActivePasses = (enabled = true, realtime = true) =>
+  usePasses({ status: "active", enabled, realtime });
 
 type LogQueryOptions = {
   enabled?: boolean;
   limit?: number;
   sinceMs?: number;
+  realtime?: boolean;
 };
 
 export const useLogs = (options: LogQueryOptions = {}) => {
-  const { enabled = true, limit: limitCount, sinceMs } = options;
+  const { enabled = true, limit: limitCount, sinceMs, realtime = true } = options;
   const q = useMemo(() => {
     if (!enabled) return null;
     const col = collections.logs();
@@ -186,25 +230,31 @@ export const useLogs = (options: LogQueryOptions = {}) => {
     if (limitCount) constraints.push(limit(limitCount));
     return query(col, ...constraints);
   }, [enabled, sinceMs, limitCount]);
-  return useRealtimeCollection<Log>(q, converters.log.fromFirestore);
+  return useCollection<Log>(q, converters.log.fromFirestore, realtime);
 };
 
-export const useUserLogs = (uid?: string, enabled = true) => {
+export const useUserLogs = (
+  uid?: string,
+  options: { enabled?: boolean; realtime?: boolean } = {}
+) => {
+  const { enabled = true, realtime = true } = options;
   const q = useMemo(() => {
     if (!enabled || !uid) return null;
     const col = collections.logs();
     if (!col) return null;
     return query(col, where("userId", "==", uid));
   }, [uid, enabled]);
-  return useRealtimeCollection<Log>(q, converters.log.fromFirestore);
+  return useCollection<Log>(q, converters.log.fromFirestore, realtime);
 };
 
-export const useBreaks = () => {
+export const useBreaks = (options: BaseQueryOptions = {}) => {
+  const { enabled = true, realtime = true } = options;
   const q = useMemo(() => {
+    if (!enabled) return null;
     const col = collections.breaks();
     return col ? query(col) : null;
-  }, []);
-  return useRealtimeCollection<Break>(q, converters.breakItem.fromFirestore);
+  }, [enabled]);
+  return useCollection<Break>(q, converters.breakItem.fromFirestore, realtime);
 };
 
 export const useBreaksPolling = (intervalMs = 10000) => {
@@ -215,7 +265,11 @@ export const useBreaksPolling = (intervalMs = 10000) => {
   return usePollingCollection<Break>(q, converters.breakItem.fromFirestore, intervalMs);
 };
 
-export const useNotifications = (enabled = true, limitCount = 50) => {
+export const useNotifications = (
+  enabled = true,
+  limitCount = 50,
+  realtime = true
+) => {
   const q = useMemo(() => {
     if (!enabled) return null;
     const col = collections.notifications();
@@ -225,18 +279,21 @@ export const useNotifications = (enabled = true, limitCount = 50) => {
     }
     return query(col, orderBy("createdAt", "desc"));
   }, [enabled, limitCount]);
-  return useRealtimeCollection<Notification>(
+  return useCollection<Notification>(
     q,
-    converters.notification.fromFirestore
+    converters.notification.fromFirestore,
+    realtime
   );
 };
 
-export const useDuties = () => {
+export const useDuties = (options: BaseQueryOptions = {}) => {
+  const { enabled = true, realtime = true } = options;
   const q = useMemo(() => {
+    if (!enabled) return null;
     const col = collections.duties();
     return col ? query(col) : null;
-  }, []);
-  return useRealtimeCollection<Duty>(q, converters.duty.fromFirestore);
+  }, [enabled]);
+  return useCollection<Duty>(q, converters.duty.fromFirestore, realtime);
 };
 
 export const useDutiesPolling = (intervalMs = 10000) => {
@@ -250,10 +307,11 @@ export const useDutiesPolling = (intervalMs = 10000) => {
 type ComplaintQueryOptions = {
   studentId?: string;
   enabled?: boolean;
+  realtime?: boolean;
 };
 
 export const useComplaints = (options: ComplaintQueryOptions = {}) => {
-  const { studentId, enabled = true } = options;
+  const { studentId, enabled = true, realtime = true } = options;
   const q = useMemo(() => {
     if (!enabled) return null;
     const col = collections.complaints();
@@ -263,7 +321,11 @@ export const useComplaints = (options: ComplaintQueryOptions = {}) => {
     }
     return query(col);
   }, [studentId, enabled]);
-  return useRealtimeCollection<Complaint>(q, converters.complaint.fromFirestore);
+  return useCollection<Complaint>(
+    q,
+    converters.complaint.fromFirestore,
+    realtime
+  );
 };
 
 export const useComplaintsPolling = (intervalMs = 10000) => {
@@ -674,39 +736,22 @@ export const updateComplaint = async (
   });
 };
 
-export const useNotificationReads = (uid?: string) => {
-  const q = useMemo(() => {
-    if (!uid) return null;
-    if (!collections.users()) return null;
-    return query(
-      collection(doc(db!, "users", uid), "notification_reads"),
-      orderBy("readAt", "desc")
-    );
-  }, [uid]);
-  return useRealtimeCollection<{ id: string }>(
-    q,
-    (snap: any) => ({ id: snap.id })
-  );
-};
-
 export const markNotificationsRead = async (
   uid: string,
-  ids: string[],
+  count = 0,
   actorId?: string
 ) => {
-  if (!db) throw new Error("Firestore not configured");
-  if (!ids.length) return;
-  const batch = writeBatch(db);
-  ids.forEach((notificationId) => {
-    const ref = doc(db, "users", uid, "notification_reads", notificationId);
-    batch.set(ref, { readAt: serverCreatedAt() }, { merge: true });
+  const ref = docRefs.user(uid);
+  if (!ref) throw new Error("Firestore not configured");
+  await updateDoc(ref, {
+    lastNotificationReadAt: serverCreatedAt(),
+    updatedAt: serverCreatedAt(),
   });
-  await batch.commit();
   await logAction({
     userId: actorId ?? "system",
     action: "notifications_marked_read",
     entityType: "notification",
     entityId: uid,
-    details: { count: ids.length },
+    details: { count },
   });
 };

@@ -24,8 +24,9 @@ export default function DashboardPage() {
   const { data: complaints } = useComplaints({
     studentId: staffView ? undefined : user?.uid,
     enabled: !!user,
+    realtime: staffView,
   });
-  const { data: duties } = useDuties();
+  const { data: duties } = useDuties({ enabled: !!user, realtime: staffView });
 
   const activePassPreview = passes
     .filter((pass) => pass.status === "active")
@@ -145,7 +146,7 @@ export default function DashboardPage() {
           <h2 className="text-xl font-semibold tracking-tight">
             Duty Schedule
           </h2>
-          <DutyTable />
+          <DutyTable duties={duties} realtime={staffView} />
         </div>
       </div>
     </div>

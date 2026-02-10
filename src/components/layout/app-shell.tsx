@@ -8,6 +8,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { useRequireAuth } from "@/hooks/use-auth";
 import { Skeleton } from "../ui/skeleton";
 import { PageWrapper } from "@/components/motion/page-wrapper";
+import { BreaksProvider } from "@/hooks/use-break-status";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, loading } = useRequireAuth();
@@ -28,16 +29,18 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <AppSidebar user={user} />
-        <div className="flex min-w-0 flex-1 flex-col sm:pl-14">
-          <AppHeader />
-          <main className="min-w-0 flex-1 overflow-x-hidden p-4 pb-24 md:p-6 lg:p-8">
-            <PageWrapper>{children}</PageWrapper>
-          </main>
+      <BreaksProvider>
+        <div className="flex min-h-screen w-full">
+          <AppSidebar user={user} />
+          <div className="flex min-w-0 flex-1 flex-col sm:pl-14">
+            <AppHeader />
+            <main className="min-w-0 flex-1 overflow-x-hidden p-4 pb-24 md:p-6 lg:p-8">
+              <PageWrapper>{children}</PageWrapper>
+            </main>
+          </div>
         </div>
-      </div>
-      <MobileNav user={user} />
+        <MobileNav user={user} />
+      </BreaksProvider>
     </SidebarProvider>
   );
 }
