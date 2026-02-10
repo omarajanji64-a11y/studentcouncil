@@ -308,19 +308,30 @@ type ComplaintQueryOptions = {
   studentId?: string;
   enabled?: boolean;
   realtime?: boolean;
+  sinceMs?: number;
+  limit?: number;
 };
 
 export const useComplaints = (options: ComplaintQueryOptions = {}) => {
-  const { studentId, enabled = true, realtime = true } = options;
+  const { studentId, enabled = true, realtime = true, sinceMs, limit: limitCount } = options;
   const q = useMemo(() => {
     if (!enabled) return null;
     const col = collections.complaints();
     if (!col) return null;
+    const constraints = [];
     if (studentId) {
-      return query(col, where("studentId", "==", studentId));
+      constraints.push(where("studentId", "==", studentId));
     }
-    return query(col);
-  }, [studentId, enabled]);
+    if (typeof sinceMs === "number") {
+      constraints.push(where("timestamp", ">=", Timestamp.fromMillis(sinceMs)));
+      constraints.push(orderBy("timestamp", "desc"));
+    } else if (limitCount) {
+      constraints.push(orderBy("timestamp", "desc"));
+    }
+    if (limitCount) constraints.push(limit(limitCount));
+    if (!constraints.length) return query(col);
+    return query(col, ...constraints);
+  }, [studentId, enabled, sinceMs, limitCount]);
   return useCollection<Complaint>(
     q,
     converters.complaint.fromFirestore,

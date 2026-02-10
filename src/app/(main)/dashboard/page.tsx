@@ -15,16 +15,19 @@ import { useAuth } from "@/hooks/use-auth";
 import { isStaff } from "@/lib/permissions";
 import { useActivePasses, useComplaints, useDuties } from "@/hooks/use-firestore";
 import { format } from "date-fns";
+import { useMemo } from "react";
 import { DutyTable } from "@/components/schedule/duty-table";
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const staffView = isStaff(user);
+  const sinceMs = useMemo(() => Date.now() - 24 * 60 * 60 * 1000, []);
   const { data: passes } = useActivePasses();
   const { data: complaints } = useComplaints({
     studentId: staffView ? undefined : user?.uid,
     enabled: !!user,
     realtime: staffView,
+    sinceMs,
   });
   const { data: duties } = useDuties({ enabled: !!user, realtime: staffView });
 

@@ -7,14 +7,17 @@ import { ComplaintsTable } from "@/components/complaints/complaints-table";
 import { useAuth } from "@/hooks/use-auth";
 import { useComplaints, useDuties } from "@/hooks/use-firestore";
 import { isStaff } from "@/lib/permissions";
+import { useMemo } from "react";
 
 export default function ComplaintsPage() {
   const { user } = useAuth();
   const staffView = isStaff(user);
+  const sinceMs = useMemo(() => Date.now() - 24 * 60 * 60 * 1000, []);
   const { data: complaints, loading, refresh } = useComplaints({
     studentId: staffView ? undefined : user?.uid,
     enabled: !!user,
     realtime: staffView,
+    sinceMs,
   });
   const { data: duties } = useDuties({ realtime: staffView });
   if (!user) return null;
