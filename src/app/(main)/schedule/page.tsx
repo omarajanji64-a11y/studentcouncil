@@ -1,22 +1,20 @@
 "use client";
 
 import { PageHeader } from "@/components/shared/page-header";
-import { DutyTable } from "@/components/schedule/duty-table";
+import { DutyScheduleEditor } from "@/components/schedule/duty-schedule";
 import { useRequireAuth } from "@/hooks/use-auth";
-import { isStaff } from "@/lib/permissions";
 
 export default function SchedulePage() {
-  const { user } = useRequireAuth();
-  const realtime = isStaff(user);
+  useRequireAuth();
 
   return (
     <div>
       <PageHeader
         title="Schedule"
-        description="Manage duty shifts and assignments."
+        description="Manage duty shifts with editable times."
       />
       <div className="mb-6">
-        <DutyTable realtime={realtime} />
+        <DutyScheduleEditor />
       </div>
     </div>
   );

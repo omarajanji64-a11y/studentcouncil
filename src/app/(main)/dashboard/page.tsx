@@ -16,7 +16,6 @@ import { isStaff } from "@/lib/permissions";
 import { useActivePasses, useComplaints, useDuties } from "@/hooks/use-firestore";
 import { format } from "date-fns";
 import { useMemo } from "react";
-import { DutyTable } from "@/components/schedule/duty-table";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -50,6 +49,13 @@ export default function DashboardPage() {
     .sort((a, b) => a.startTime - b.startTime)
     .filter((duty) => duty.endTime >= now)
     .slice(0, 3);
+
+  const staffDuties = duties
+    .filter((duty) => duty.endTime >= now)
+    .sort((a, b) => a.startTime - b.startTime)
+    .slice(0, 3);
+
+  const dutyPreview = staffView ? staffDuties : memberDuties;
 
   return (
     <div className="container mx-auto px-0">
@@ -113,43 +119,38 @@ export default function DashboardPage() {
               </Card>
             </AnimatedCard>
 
-            {!isStaff(user) ? (
-              <AnimatedCard>
-                <Card className="h-full">
-                  <CardHeader>
-                    <CardTitle>Duty Schedule</CardTitle>
-                    <CardDescription>Your upcoming duties</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    {memberDuties.length ? (
-                      memberDuties.map((duty) => (
-                        <div key={duty.id} className="space-y-1">
-                          <div className="truncate font-medium">
-                            {duty.location ?? duty.title}
-                          </div>
-                          <div className="text-muted-foreground">
-                            {format(new Date(duty.startTime), "p")} -{" "}
-                            {format(new Date(duty.endTime), "p")}
-                          </div>
+            <AnimatedCard>
+              <Card className="h-full">
+                <CardHeader>
+                  <CardTitle>
+                    {staffView ? "Upcoming Duties" : "Duty Schedule"}
+                  </CardTitle>
+                  <CardDescription>
+                    {staffView ? "Next scheduled shifts" : "Your upcoming duties"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  {dutyPreview.length ? (
+                    dutyPreview.map((duty) => (
+                      <div key={duty.id} className="space-y-1">
+                        <div className="truncate font-medium">
+                          {duty.location ?? duty.title}
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-muted-foreground">
-                        No upcoming duties assigned.
+                        <div className="text-muted-foreground">
+                          {format(new Date(duty.startTime), "p")} -{" "}
+                          {format(new Date(duty.endTime), "p")}
+                        </div>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </AnimatedCard>
-            ) : null}
+                    ))
+                  ) : (
+                    <div className="text-muted-foreground">
+                      No upcoming duties scheduled.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </AnimatedCard>
           </AnimatedList>
-        </div>
-
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold tracking-tight">
-            Duty Schedule
-          </h2>
-          <DutyTable duties={duties} realtime={staffView} />
         </div>
       </div>
     </div>

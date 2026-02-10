@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format, addDays, addMonths, startOfWeek, startOfMonth, endOfMonth, endOfWeek, isSameMonth, isSameDay } from "date-fns";
 import { CalendarDays, PlusCircle, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,9 @@ export function DutyScheduleEditor() {
   const [view, setView] = useState<"day" | "week" | "month">("week");
   const [anchorDate, setAnchorDate] = useState(() => new Date());
   const [editor, setEditor] = useState<EditorState>({ open: false, duty: null });
+  const [scope, setScope] = useState<"personal" | "all">("personal");
   const [title, setTitle] = useState("");
+  const [location, setLocation] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [memberIds, setMemberIds] = useState<string[]>([]);
@@ -43,8 +45,32 @@ export function DutyScheduleEditor() {
     [users]
   );
 
+  useEffect(() => {
+    if (staff) {
+      setScope("all");
+    }
+  }, [staff]);
+
+  const genderFilteredDuties = useMemo(() => {
+    if (staff || !user?.gender) return duties;
+    const token = user.gender === "male" ? "boys" : "girls";
+    return duties.filter((duty) => {
+      const haystack = `${duty.location ?? ""} ${duty.title ?? ""}`.toLowerCase();
+      const hasGender = haystack.includes("boys") || haystack.includes("girls");
+      if (!hasGender) return true;
+      return haystack.includes(token);
+    });
+  }, [duties, staff, user]);
+
+  const scopedDuties = useMemo(() => {
+    if (scope === "personal" && user) {
+      return genderFilteredDuties.filter((duty) => duty.memberIds.includes(user.uid));
+    }
+    return genderFilteredDuties;
+  }, [genderFilteredDuties, scope, user]);
+
   const dutiesByDay = useMemo(() => {
-    const sorted = [...duties].sort((a, b) => a.startTime - b.startTime);
+    const sorted = [...scopedDuties].sort((a, b) => a.startTime - b.startTime);
     const map = new Map<string, Duty[]>();
     sorted.forEach((duty) => {
       const key = buildDateKey(new Date(duty.startTime));
@@ -52,17 +78,19 @@ export function DutyScheduleEditor() {
       map.set(key, [...(map.get(key) ?? []), duty]);
     });
     return map;
-  }, [duties]);
+  }, [scopedDuties]);
 
   const openEditor = (duty?: Duty) => {
     if (!staff) return;
     if (duty) {
       setTitle(duty.title);
+      setLocation(duty.location ?? "");
       setStartTime(format(new Date(duty.startTime), "yyyy-MM-dd'T'HH:mm"));
       setEndTime(format(new Date(duty.endTime), "yyyy-MM-dd'T'HH:mm"));
       setMemberIds(duty.memberIds);
     } else {
       setTitle("");
+      setLocation("");
       setStartTime("");
       setEndTime("");
       setMemberIds([]);
@@ -85,16 +113,33 @@ export function DutyScheduleEditor() {
     const memberNames = memberOptions
       .filter((option) => memberIds.includes(option.id))
       .map((option) => option.name);
+    const locationValue = location.trim();
     if (editor.duty) {
+      const update: Partial<Duty> = {
+        title,
+        startTime: start,
+        endTime: end,
+        memberIds,
+        memberNames,
+      };
+      if (locationValue) update.location = locationValue;
       await updateDuty(
         editor.duty.id,
-        { title, startTime: start, endTime: end, memberIds, memberNames },
+        update,
         user.uid
       );
       toast({ title: "Duty updated", description: "Shift has been updated." });
     } else {
+      const createPayload: Omit<Duty, "id"> = {
+        title,
+        startTime: start,
+        endTime: end,
+        memberIds,
+        memberNames,
+        ...(locationValue ? { location: locationValue } : {}),
+      };
       await createDuty(
-        { title, startTime: start, endTime: end, memberIds, memberNames },
+        createPayload,
         user.uid
       );
       toast({ title: "Duty created", description: "New duty shift added." });
@@ -175,24 +220,36 @@ export function DutyScheduleEditor() {
           >
             Next
           </Button>
-          <Button size="sm" className="gap-1" onClick={() => openEditor()}>
-            <PlusCircle className="h-4 w-4" />
-            New Duty
-          </Button>
+          {staff ? (
+            <Button size="sm" className="gap-1" onClick={() => openEditor()}>
+              <PlusCircle className="h-4 w-4" />
+              New Duty
+            </Button>
+          ) : null}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <Tabs value={view} onValueChange={(value) => setView(value as any)}>
-          <TabsList>
-            <TabsTrigger value="day">Day</TabsTrigger>
-            <TabsTrigger value="week">Week</TabsTrigger>
-            <TabsTrigger value="month">Month</TabsTrigger>
-          </TabsList>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Tabs value={scope} onValueChange={(value) => setScope(value as any)}>
+              <TabsList>
+                <TabsTrigger value="personal">Personal</TabsTrigger>
+                <TabsTrigger value="all">All</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <TabsList>
+              <TabsTrigger value="day">Day</TabsTrigger>
+              <TabsTrigger value="week">Week</TabsTrigger>
+              <TabsTrigger value="month">Month</TabsTrigger>
+            </TabsList>
+          </div>
           <TabsContent value={view}>
             <div
               className={cn(
                 "grid gap-3",
-                view === "month" ? "grid-cols-2 sm:grid-cols-4 lg:grid-cols-7" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                view === "month"
+                  ? "grid-cols-2 sm:grid-cols-4 lg:grid-cols-7"
+                  : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
               )}
             >
               {dayRange.map((date) => {
@@ -234,7 +291,16 @@ export function DutyScheduleEditor() {
                             className="rounded-md border bg-background p-2 text-xs shadow-sm"
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <p className="font-semibold">{duty.title}</p>
+                              <div>
+                                <p className="font-semibold">
+                                  {duty.location ?? duty.title}
+                                </p>
+                                {duty.location && duty.title && duty.location !== duty.title ? (
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {duty.title}
+                                  </p>
+                                ) : null}
+                              </div>
                               {staff ? (
                                 <div className="flex items-center gap-1">
                                   <Button
@@ -304,6 +370,15 @@ export function DutyScheduleEditor() {
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder="e.g., Front Counter"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="duty-location">Location (optional)</Label>
+            <Input
+              id="duty-location"
+              value={location}
+              onChange={(event) => setLocation(event.target.value)}
+              placeholder="e.g., 4th floor boys staircase"
             />
           </div>
           <div className="grid gap-2">
