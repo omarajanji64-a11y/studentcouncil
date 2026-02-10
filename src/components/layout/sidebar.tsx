@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Tooltip,
   TooltipContent,
@@ -118,7 +119,13 @@ export function AppSidebar({ user }: AppSidebarProps) {
             href="/dashboard"
             className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
           >
-            <Ticket className="h-4 w-4 transition-all group-hover:scale-110" />
+            <Image
+              src="/student-council-logo.jpeg"
+              alt="Student Council"
+              width={16}
+              height={16}
+              className="h-4 w-4 object-contain transition-transform group-hover:scale-110"
+            />
             <span className="sr-only">Student Council</span>
           </Link>
           {navLinks.map((link) => renderLink(link))}

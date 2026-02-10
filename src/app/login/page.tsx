@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Ticket } from "lucide-react";
+import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 import { firebaseReady } from "@/lib/firebase";
@@ -81,7 +81,13 @@ export default function LoginPage() {
       <Card className="mx-auto w-full max-w-sm shadow-xl">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <Ticket className="h-8 w-8" />
+            <Image
+              src="/student-council-logo.jpeg"
+              alt="Student Council"
+              width={40}
+              height={40}
+              className="h-10 w-10 object-contain"
+            />
           </div>
           <CardTitle className="text-2xl font-bold">
             Student Council

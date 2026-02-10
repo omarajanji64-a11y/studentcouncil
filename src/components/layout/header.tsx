@@ -96,7 +96,13 @@ export function AppHeader() {
               href="/dashboard"
               className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
             >
-              <Ticket className="h-5 w-5 transition-all group-hover:scale-110" />
+              <Image
+                src="/student-council-logo.jpeg"
+                alt="Student Council"
+                width={20}
+                height={20}
+                className="h-5 w-5 object-contain transition-transform group-hover:scale-110"
+              />
               <span className="sr-only">Student Council</span>
             </Link>
             {navLinks.map(
