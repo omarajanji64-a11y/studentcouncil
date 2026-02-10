@@ -40,6 +40,7 @@ import { CreatePassButton } from "../passes/create-pass-button";
 import { NotificationBell } from "../notifications/notification-bell";
 import { isAdmin, isStaff } from "@/lib/permissions";
 import { OverridePassButton } from "../passes/override-pass-button";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 const navLinks = [
   { href: "/dashboard", icon: Home, label: "Dashboard" },
@@ -144,6 +145,7 @@ export function AppHeader() {
         <CreatePassButton />
         <OverridePassButton />
         <NotificationBell />
+        <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
