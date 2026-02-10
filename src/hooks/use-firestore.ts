@@ -450,6 +450,21 @@ export const updateUserScheduleEditor = async (
   });
 };
 
+export const clearTemporaryPasswordFlag = async (uid: string, actorId?: string) => {
+  const ref = docRefs.user(uid);
+  if (!ref) throw new Error("Firestore not configured");
+  await updateDoc(ref, {
+    mustChangePassword: false,
+    updatedAt: serverCreatedAt(),
+  });
+  await logAction({
+    userId: actorId ?? uid,
+    action: "password_updated",
+    entityType: "user",
+    entityId: uid,
+  });
+};
+
 export const saveNotificationToken = async (uid: string, token: string) => {
   const ref = docRefs.user(uid);
   if (!ref) throw new Error("Firestore not configured");

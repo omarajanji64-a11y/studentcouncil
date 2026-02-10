@@ -42,6 +42,7 @@ const buildFallbackUser = (fbUser: FirebaseUser, role: User["role"]): User => ({
   notificationsEnabled: false,
   canEditSchedule: role !== "member",
   lastNotificationReadAt: 0,
+  mustChangePassword: false,
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -91,6 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   notificationsEnabled: fallback.notificationsEnabled ?? false,
                   canEditSchedule: fallback.canEditSchedule ?? false,
                   lastNotificationReadAt: fallback.lastNotificationReadAt ?? 0,
+                  mustChangePassword: false,
                 });
               } catch {
                 // Ignore profile creation errors; use fallback user.
@@ -157,6 +159,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       notificationsEnabled: true,
       canEditSchedule: role !== "member",
       lastNotificationReadAt: 0,
+      mustChangePassword: false,
     };
     await setDoc(
       ref,
@@ -168,6 +171,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         notificationsEnabled: demoProfile.notificationsEnabled ?? false,
         canEditSchedule: demoProfile.canEditSchedule ?? false,
         lastNotificationReadAt: demoProfile.lastNotificationReadAt ?? 0,
+        mustChangePassword: demoProfile.mustChangePassword ?? false,
       },
       { merge: true }
     );

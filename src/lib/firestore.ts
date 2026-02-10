@@ -53,6 +53,7 @@ export const converters = {
         notificationsEnabled: data.notificationsEnabled ?? false,
         canEditSchedule: data.canEditSchedule ?? false,
         lastNotificationReadAt: toMillis(data.lastNotificationReadAt, 0),
+        mustChangePassword: data.mustChangePassword ?? false,
       };
     },
   },

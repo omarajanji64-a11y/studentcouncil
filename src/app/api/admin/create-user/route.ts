@@ -78,6 +78,7 @@ export async function POST(request: Request) {
         avatar: null,
         notificationsEnabled: false,
         canEditSchedule: false,
+        mustChangePassword: true,
         lastNotificationReadAt: null,
         updatedAt: FieldValue.serverTimestamp(),
       },

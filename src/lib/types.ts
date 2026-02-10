@@ -8,6 +8,7 @@ export type User = {
   notificationsEnabled?: boolean;
   canEditSchedule?: boolean;
   lastNotificationReadAt?: number;
+  mustChangePassword?: boolean;
 };
 
 export type Break = {
