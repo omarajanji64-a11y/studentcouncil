@@ -12,7 +12,6 @@ import React, {
 } from "react";
 import {
   onAuthStateChanged,
-  signInAnonymously,
   signInWithEmailAndPassword,
   signOut,
   type User as FirebaseUser,
@@ -26,7 +25,6 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signInDemo: (role: "member" | "supervisor" | "admin") => Promise<void>;
   logout: () => Promise<void>;
   updateDisplayName: (name: string) => Promise<void>;
 };
@@ -140,43 +138,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await updateProfile(auth.currentUser, { displayName: name });
   };
 
-  const signInDemo = async (role: "member" | "supervisor" | "admin") => {
-    if (!auth) throw new Error("Firebase Auth not configured");
-    const credential = await signInAnonymously(auth);
-    const ref = docRefs.user(credential.user.uid);
-    if (!ref) return;
-    const demoProfile: User = {
-      uid: credential.user.uid,
-      name:
-        role === "admin"
-          ? "Demo Admin"
-          : role === "supervisor"
-          ? "Demo Supervisor"
-          : "Demo Member",
-      email: `${role}@demo.local`,
-      role,
-      avatar: "https://picsum.photos/seed/demo/40/40",
-      notificationsEnabled: true,
-      canEditSchedule: role !== "member",
-      lastNotificationReadAt: 0,
-      mustChangePassword: false,
-    };
-    await setDoc(
-      ref,
-      {
-        name: demoProfile.name,
-        email: demoProfile.email,
-        role: demoProfile.role,
-        avatar: demoProfile.avatar ?? null,
-        notificationsEnabled: demoProfile.notificationsEnabled ?? false,
-        canEditSchedule: demoProfile.canEditSchedule ?? false,
-        lastNotificationReadAt: demoProfile.lastNotificationReadAt ?? 0,
-        mustChangePassword: demoProfile.mustChangePassword ?? false,
-      },
-      { merge: true }
-    );
-  };
-
   const logout = async () => {
     if (!auth) return;
     if (user?.uid) {
@@ -190,7 +151,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await signOut(auth);
   };
 
-  const value = { user, loading, signIn, signInDemo, logout, updateDisplayName };
+  const value = { user, loading, signIn, logout, updateDisplayName };
 
   return React.createElement(AuthContext.Provider, { value }, children);
 };

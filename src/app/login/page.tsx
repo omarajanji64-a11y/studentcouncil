@@ -12,7 +12,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
-import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 import { firebaseReady } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -21,28 +20,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState<
-    "member" | "supervisor" | "admin" | "signin" | null
-  >(null);
+  const [isLoading, setIsLoading] = useState<"signin" | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { toast } = useToast();
-  const { signIn, signInDemo } = useAuth();
-
-  const handleDemoLogin = async (role: "member" | "supervisor" | "admin") => {
-    setIsLoading(role);
-    try {
-      await signInDemo(role);
-      router.push("/dashboard");
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Demo Login Failed",
-        description: "Enable Firebase Auth (anonymous) and try again.",
-      });
-      setIsLoading(null);
-    }
-  };
+  const { signIn } = useAuth();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,45 +123,6 @@ export default function LoginPage() {
               </Button>
             </div>
           </form>
-          <Separator className="my-6" />
-          <div className="space-y-2 text-center text-sm text-muted-foreground">
-            <p>For demonstration purposes:</p>
-            <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={() => handleDemoLogin("member")}
-                disabled={!!isLoading}
-              >
-                {isLoading === "member" ? (
-                  <Skeleton className="mr-2 h-4 w-4 rounded-full" />
-                ) : null}
-                Login as Member
-              </Button>
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={() => handleDemoLogin("supervisor")}
-                disabled={!!isLoading}
-              >
-                {isLoading === "supervisor" ? (
-                  <Skeleton className="mr-2 h-4 w-4 rounded-full" />
-                ) : null}
-                Login as Supervisor
-              </Button>
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={() => handleDemoLogin("admin")}
-                disabled={!!isLoading}
-              >
-                {isLoading === "admin" ? (
-                  <Skeleton className="mr-2 h-4 w-4 rounded-full" />
-                ) : null}
-                Login as Admin
-              </Button>
-            </div>
-          </div>
         </CardContent>
       </Card>
       </div>
