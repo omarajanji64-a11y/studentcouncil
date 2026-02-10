@@ -228,8 +228,8 @@ export function DutyTable({ duties: providedDuties, realtime }: DutyTableProps) 
           <CardTitle>Duty Schedule</CardTitle>
           <CardDescription>
             {isStaff(user)
-              ? "Supervisor view shows locations by break."
-              : "Member view shows your assignments by break."}
+              ? "All view shows locations by break."
+              : "Personal view shows your assignments by break."}
           </CardDescription>
         </div>
         {canEdit ? (
@@ -275,13 +275,13 @@ export function DutyTable({ duties: providedDuties, realtime }: DutyTableProps) 
             Girls
           </Button>
         </div>
-        <Tabs defaultValue={isStaff(user) ? "supervisor" : "member"}>
+        <Tabs defaultValue={isStaff(user) ? "all" : "personal"}>
           <TabsList>
-            <TabsTrigger value="member">Member View</TabsTrigger>
-            <TabsTrigger value="supervisor">Supervisor View</TabsTrigger>
+            <TabsTrigger value="personal">Personal View</TabsTrigger>
+            <TabsTrigger value="all">All View</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="member">
+          <TabsContent value="personal">
             <div className="grid gap-3 md:hidden">
               {breaksLoading ? (
                 <div className="rounded-md border p-4 text-sm text-muted-foreground">
@@ -365,7 +365,7 @@ export function DutyTable({ duties: providedDuties, realtime }: DutyTableProps) 
             </div>
           </TabsContent>
 
-          <TabsContent value="supervisor">
+          <TabsContent value="all">
             <div className="grid gap-4 md:hidden">
               {breaksLoading ? (
                 <div className="rounded-md border p-4 text-sm text-muted-foreground">
