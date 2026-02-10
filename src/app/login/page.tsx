@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { FirebaseError } from "firebase/app";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -38,13 +39,38 @@ export default function LoginPage() {
     }
     setIsLoading("signin");
     try {
-      await signIn(email.trim(), password);
+      await signIn(email.trim().toLowerCase(), password);
       router.push("/dashboard");
     } catch (error) {
+      let description = "Check your credentials and Firebase Auth settings.";
+      if (error instanceof FirebaseError) {
+        switch (error.code) {
+          case "auth/invalid-credential":
+          case "auth/wrong-password":
+          case "auth/user-not-found":
+            description =
+              "Email or password is incorrect. If you already changed your temporary password, use the new one.";
+            break;
+          case "auth/user-disabled":
+            description = "This account is disabled. Contact an administrator.";
+            break;
+          case "auth/too-many-requests":
+            description =
+              "Too many attempts. Wait a few minutes and try again.";
+            break;
+          case "auth/operation-not-allowed":
+            description =
+              "Email/password sign-in is disabled in Firebase Auth.";
+            break;
+          default:
+            description = error.message || description;
+            break;
+        }
+      }
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: "Check your credentials and Firebase Auth settings.",
+        description,
       });
       setIsLoading(null);
     }
