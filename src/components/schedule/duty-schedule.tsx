@@ -27,8 +27,8 @@ const buildDateKey = (date: Date) => format(date, "yyyy-MM-dd");
 export function DutyScheduleEditor() {
   const { user } = useAuth();
   const staff = isStaff(user);
-  const { data: duties, loading } = useDuties({ enabled: !!user, realtime: staff });
-  const { data: users } = useUsers({ enabled: staff, realtime: staff });
+  const { data: duties, loading, refresh } = useDuties({ enabled: !!user, realtime: false });
+  const { data: users } = useUsers({ enabled: staff, realtime: false });
   const { toast } = useToast();
   const [view, setView] = useState<"day" | "week" | "month">("week");
   const [anchorDate, setAnchorDate] = useState(() => new Date());
@@ -128,6 +128,7 @@ export function DutyScheduleEditor() {
         update,
         user.uid
       );
+      refresh?.();
       toast({ title: "Duty updated", description: "Shift has been updated." });
     } else {
       const createPayload: Omit<Duty, "id"> = {
@@ -142,6 +143,7 @@ export function DutyScheduleEditor() {
         createPayload,
         user.uid
       );
+      refresh?.();
       toast({ title: "Duty created", description: "New duty shift added." });
     }
     setEditor({ open: false, duty: null });
@@ -150,6 +152,7 @@ export function DutyScheduleEditor() {
   const handleDelete = async (dutyId: string) => {
     if (!staff || !user) return;
     await deleteDuty(dutyId, user.uid);
+    refresh?.();
     toast({ title: "Duty deleted", description: "Duty has been removed." });
   };
 
@@ -165,6 +168,7 @@ export function DutyScheduleEditor() {
     const newStart = target.getTime();
     const newEnd = newStart + diffMinutes * 60 * 1000;
     await updateDuty(dutyId, { startTime: newStart, endTime: newEnd }, user.uid);
+    refresh?.();
   };
 
   const dayRange = useMemo(() => {

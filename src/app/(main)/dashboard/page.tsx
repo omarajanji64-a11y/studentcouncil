@@ -28,7 +28,7 @@ export default function DashboardPage() {
     realtime: staffView,
     sinceMs,
   });
-  const { data: duties } = useDuties({ enabled: !!user, realtime: staffView });
+  const { data: duties } = useDuties({ enabled: !!user, realtime: false });
 
   const activePassPreview = passes
     .filter((pass) => pass.status === "active")

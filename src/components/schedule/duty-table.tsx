@@ -60,15 +60,14 @@ type DutyTableProps = {
 export function DutyTable({ duties: providedDuties, realtime }: DutyTableProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const effectiveRealtime = realtime ?? isStaff(user);
   const { breaks, loading: breaksLoading } = useBreaksData();
   const { data: duties } = providedDuties
     ? { data: providedDuties }
-    : useDuties({ realtime: effectiveRealtime });
+    : useDuties({ enabled: !!user, realtime: false });
   const allowUserList = isStaff(user) || user?.canEditSchedule;
   const { data: users } = useUsers({
-    enabled: allowUserList,
-    realtime: effectiveRealtime,
+    enabled: allowUserList && !!user,
+    realtime: false,
   });
   const [activeCell, setActiveCell] = useState<EditCell | null>(null);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);

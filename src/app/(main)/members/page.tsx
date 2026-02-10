@@ -47,7 +47,7 @@ import { useState } from "react";
 
 export default function MembersPage() {
   const { user: currentUser } = useRequireAuth("supervisor");
-  const { data: users, loading } = useUsers({ enabled: !!currentUser, realtime: true });
+  const { data: users, loading, refresh } = useUsers({ enabled: !!currentUser, realtime: false });
   const sortedUsers = [...users].sort((a, b) =>
     (a.name || "").localeCompare(b.name || "")
   );
@@ -65,54 +65,68 @@ export default function MembersPage() {
     Record<string, "male" | "female" | undefined>
   >({});
 
-  const handleRoleChange = (uid: string, newRole: "member" | "supervisor" | "admin") => {
-    updateUserRole(uid, newRole, currentUser?.uid).catch(() =>
+  const handleRoleChange = async (
+    uid: string,
+    newRole: "member" | "supervisor" | "admin"
+  ) => {
+    try {
+      await updateUserRole(uid, newRole, currentUser?.uid);
+      refresh?.();
+    } catch {
       toast({
         variant: "destructive",
         title: "Update failed",
         description: "Could not update the user's role.",
-      })
-    );
+      });
+    }
   };
 
-  const handleRemoveUser = (uid: string) => {
-    removeUser(uid, currentUser?.uid).catch(() =>
+  const handleRemoveUser = async (uid: string) => {
+    try {
+      await removeUser(uid, currentUser?.uid);
+      refresh?.();
+    } catch {
       toast({
         variant: "destructive",
         title: "Remove failed",
         description: "Could not remove the user.",
-      })
-    );
+      });
+    }
   };
 
-  const handleScheduleEditorToggle = (uid: string, enabled: boolean) => {
-    updateUserScheduleEditor(uid, enabled, currentUser?.uid).catch(() =>
+  const handleScheduleEditorToggle = async (uid: string, enabled: boolean) => {
+    try {
+      await updateUserScheduleEditor(uid, enabled, currentUser?.uid);
+      refresh?.();
+    } catch {
       toast({
         variant: "destructive",
         title: "Update failed",
         description: "Could not update schedule editor access.",
-      })
-    );
+      });
+    }
   };
 
-  const handleGenderChange = (uid: string, gender: "male" | "female") => {
+  const handleGenderChange = async (uid: string, gender: "male" | "female") => {
     setGenderOverrides((prev) => ({ ...prev, [uid]: gender }));
-    updateUserGender(uid, gender, currentUser?.uid)
-      .catch((error) => {
-        setGenderOverrides((prev) => {
-          const next = { ...prev };
-          delete next[uid];
-          return next;
-        });
-        toast({
-          variant: "destructive",
-          title: "Update failed",
-          description:
-            error instanceof Error && error.message
-              ? error.message
-              : "Could not update sex.",
-        });
+    try {
+      await updateUserGender(uid, gender, currentUser?.uid);
+      refresh?.();
+    } catch (error) {
+      setGenderOverrides((prev) => {
+        const next = { ...prev };
+        delete next[uid];
+        return next;
       });
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description:
+          error instanceof Error && error.message
+            ? error.message
+            : "Could not update sex.",
+      });
+    }
   };
 
   const handleCreateUser = async () => {
@@ -143,6 +157,7 @@ export default function MembersPage() {
         gender: inviteGender || undefined,
         actorId: currentUser.uid,
       });
+      refresh?.();
       setIsCreating(false);
       setIsInviteOpen(false);
       setInviteName("");

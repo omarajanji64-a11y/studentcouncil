@@ -188,26 +188,45 @@ type PassQueryOptions = {
   status?: Pass["status"];
   enabled?: boolean;
   realtime?: boolean;
+  limit?: number;
 };
 
 export const usePasses = (options: PassQueryOptions = {}) => {
-  const { status, enabled = true, realtime = true } = options;
+  const { status, enabled = true, realtime = true, limit: limitCount = 50 } = options;
   const q = useMemo(() => {
     if (!enabled) return null;
     const col = collections.passes();
     if (!col) return null;
     const constraints = [];
     if (status) constraints.push(where("status", "==", status));
-    if (!constraints.length) {
-      return query(col, orderBy("issuedAt", "desc"));
-    }
+    constraints.push(orderBy("issuedAt", "desc"));
+    if (limitCount) constraints.push(limit(limitCount));
     return query(col, ...constraints);
-  }, [status, enabled]);
+  }, [status, enabled, limitCount]);
   return useCollection<Pass>(q, converters.pass.fromFirestore, realtime);
 };
 
-export const useActivePasses = (enabled = true, realtime = true) =>
-  usePasses({ status: "active", enabled, realtime });
+type ActivePassOptions = {
+  enabled?: boolean;
+  realtime?: boolean;
+  limit?: number;
+};
+
+export const useActivePasses = (options: ActivePassOptions = {}) => {
+  const { enabled = true, realtime = true, limit: limitCount = 50 } = options;
+  const q = useMemo(() => {
+    if (!enabled) return null;
+    const col = collections.passes();
+    if (!col) return null;
+    return query(
+      col,
+      where("status", "in", ["active", "pending"]),
+      orderBy("issuedAt", "desc"),
+      limit(limitCount)
+    );
+  }, [enabled, limitCount]);
+  return useCollection<Pass>(q, converters.pass.fromFirestore, realtime);
+};
 
 type LogQueryOptions = {
   enabled?: boolean;

@@ -19,7 +19,7 @@ export default function ComplaintsPage() {
     realtime: staffView,
     sinceMs,
   });
-  const { data: duties } = useDuties({ realtime: staffView });
+  const { data: duties } = useDuties({ enabled: !!user, realtime: false });
   if (!user) return null;
   const visibleComplaints = staffView
     ? complaints

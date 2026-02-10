@@ -8,12 +8,10 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { createComplaint, useDuties } from "@/hooks/use-firestore";
-import { isStaff } from "@/lib/permissions";
 
 export function ComplaintForm() {
   const { user } = useAuth();
-  const staffView = isStaff(user);
-  const { data: duties } = useDuties({ enabled: !!user, realtime: staffView });
+  const { data: duties } = useDuties({ enabled: !!user, realtime: false });
   const { toast } = useToast();
   const [targetGender, setTargetGender] = useState<"male" | "female" | "">("");
   const [title, setTitle] = useState("");

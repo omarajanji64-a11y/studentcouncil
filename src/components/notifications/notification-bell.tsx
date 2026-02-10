@@ -24,16 +24,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { easing, durations } from "@/lib/animations";
-import { isStaff } from "@/lib/permissions";
 
 export function NotificationBell() {
   const { user } = useAuth();
   const notificationsEnabled = user?.notificationsEnabled ?? false;
-  const realtime = isStaff(user);
   const { data: notifications, loading } = useNotifications(
     notificationsEnabled,
     50,
-    realtime
+    false
   );
   const [open, setOpen] = useState(false);
   const lastReadAt = user?.lastNotificationReadAt ?? 0;
