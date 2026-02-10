@@ -102,10 +102,14 @@ export function ComplaintForm() {
         description: "Your complaint has been recorded.",
       });
     } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Unable to submit the complaint.";
       toast({
         variant: "destructive",
         title: "Submission failed",
-        description: "Unable to submit the complaint.",
+        description: message,
       });
     } finally {
       setIsSubmitting(false);
