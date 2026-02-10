@@ -117,14 +117,14 @@ export function AppSidebar({ user }: AppSidebarProps) {
         <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
           <Link
             href="/dashboard"
-            className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
+            className="group flex h-12 w-12 shrink-0 items-center justify-center"
           >
             <Image
               src="/student-council-logo.jpeg"
               alt="Student Council"
-              width={24}
-              height={24}
-              className="h-6 w-6 object-contain transition-transform group-hover:scale-110"
+              width={44}
+              height={44}
+              className="h-11 w-11 object-contain transition-transform group-hover:scale-105"
             />
             <span className="sr-only">Student Council</span>
           </Link>

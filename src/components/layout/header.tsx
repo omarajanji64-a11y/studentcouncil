@@ -95,14 +95,14 @@ export function AppHeader() {
           <nav className="grid gap-6 text-lg font-medium">
             <Link
               href="/dashboard"
-              className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
+              className="group flex h-12 w-12 shrink-0 items-center justify-center"
             >
               <Image
                 src="/student-council-logo.jpeg"
                 alt="Student Council"
-                width={28}
-                height={28}
-                className="h-7 w-7 object-contain transition-transform group-hover:scale-110"
+                width={44}
+                height={44}
+                className="h-11 w-11 object-contain transition-transform group-hover:scale-105"
               />
               <span className="sr-only">Student Council</span>
             </Link>

@@ -62,13 +62,13 @@ export default function LoginPage() {
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="mx-auto w-full max-w-sm shadow-xl">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center">
             <Image
               src="/student-council-logo.jpeg"
               alt="Student Council"
-              width={48}
-              height={48}
-              className="h-12 w-12 object-contain"
+              width={72}
+              height={72}
+              className="h-16 w-16 object-contain"
             />
           </div>
           <CardTitle className="text-2xl font-bold">
