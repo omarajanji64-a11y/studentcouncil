@@ -102,7 +102,7 @@ export function AppHeader() {
                 alt="Student Council"
                 width={44}
                 height={44}
-                className="h-11 w-11 object-contain transition-transform group-hover:scale-105"
+                className="h-11 w-11 object-contain transition-transform group-hover:scale-105 dark:mix-blend-multiply dark:brightness-110"
               />
               <span className="sr-only">Student Council</span>
             </Link>

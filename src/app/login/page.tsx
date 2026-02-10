@@ -68,7 +68,7 @@ export default function LoginPage() {
               alt="Student Council"
               width={72}
               height={72}
-              className="h-16 w-16 object-contain"
+              className="h-16 w-16 object-contain dark:mix-blend-multiply dark:brightness-110"
             />
           </div>
           <CardTitle className="text-2xl font-bold">
