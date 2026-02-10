@@ -10,7 +10,7 @@ import { isStaff } from "@/lib/permissions";
 
 export default function ComplaintsPage() {
   const { user } = useAuth();
-  const { data: complaints, loading } = useComplaintsPolling();
+  const { data: complaints, loading, refresh } = useComplaintsPolling();
   const { data: duties } = useDutiesPolling();
   const staffView = isStaff(user);
   if (!user) return null;
@@ -32,6 +32,7 @@ export default function ComplaintsPage() {
             duties={duties}
             loading={loading}
             staffView={staffView}
+            onRefresh={refresh}
           />
         </CardContent>
       </Card>

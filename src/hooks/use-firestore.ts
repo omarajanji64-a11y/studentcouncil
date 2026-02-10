@@ -27,6 +27,7 @@ type LoadingState<T> = {
   data: T[];
   loading: boolean;
   error: string | null;
+  refresh?: () => void;
 };
 
 const useRealtimeCollection = <T,>(
@@ -75,6 +76,7 @@ const usePollingCollection = <T,>(
     loading: true,
     error: null,
   });
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     if (!q) {
@@ -112,9 +114,12 @@ const usePollingCollection = <T,>(
       active = false;
       if (timer) clearInterval(timer);
     };
-  }, [q, mapDoc, intervalMs]);
+  }, [q, mapDoc, intervalMs, refreshTick]);
 
-  return state;
+  return {
+    ...state,
+    refresh: () => setRefreshTick((prev) => prev + 1),
+  };
 };
 
 export const useUsers = (enabled = true) => {

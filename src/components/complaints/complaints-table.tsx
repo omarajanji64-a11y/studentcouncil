@@ -36,11 +36,13 @@ export function ComplaintsTable({
   duties,
   loading,
   staffView,
+  onRefresh,
 }: {
   data: Complaint[];
   duties: Duty[];
   loading?: boolean;
   staffView?: boolean;
+  onRefresh?: () => void;
 }) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -115,6 +117,7 @@ export function ComplaintsTable({
         },
         user.uid
       );
+      onRefresh?.();
       setActiveComplaint(null);
       toast({
         title: "Complaint updated",
