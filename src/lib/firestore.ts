@@ -63,7 +63,6 @@ export const converters = {
       return {
         id: snap.id,
         studentName: data.studentName ?? "",
-        studentId: data.studentId ?? undefined,
         studentGender: data.studentGender ?? undefined,
         reason: data.reason ?? "",
         issuedBy: data.issuedBy ?? "",

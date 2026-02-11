@@ -21,7 +21,6 @@ export type Break = {
 export type Pass = {
   id: string;
   studentName: string;
-  studentId?: string;
   studentGender?: "male" | "female" | "mixed";
   reason: string;
   issuedBy: string;
@@ -29,7 +28,7 @@ export type Pass = {
   issuedAt: number; // Unix timestamp
   expiresAt: number; // Unix timestamp
   status: 'active' | 'expired' | 'revoked';
-  passType?: 'active_break' | 'time_specified' | 'community' | 'override';
+  passType?: 'active_break' | 'time_specified' | 'override';
   durationMinutes?: number;
   override?: boolean;
 };

@@ -25,12 +25,11 @@ export function CreatePassButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [studentName, setStudentName] = useState("");
-  const [studentId, setStudentId] = useState("");
-  const [studentGender, setStudentGender] = useState<"male" | "female" | "mixed" | "">("");
+  const [studentGender, setStudentGender] = useState<"male" | "female" | "">("");
   const [reason, setReason] = useState("");
-  const [passType, setPassType] = useState<
-    "active_break" | "time_specified" | "community"
-  >("active_break");
+  const [durationMode, setDurationMode] = useState<"end_of_break" | "specific">(
+    "end_of_break"
+  );
   const [durationMinutes, setDurationMinutes] = useState("30");
   const { toast } = useToast();
   const { user } = useAuth();
@@ -54,11 +53,11 @@ export function CreatePassButton() {
       return;
     }
 
-    if (passType === "active_break" && !activeBreak) {
+    if (durationMode === "end_of_break" && !activeBreak) {
       toast({
         variant: "destructive",
         title: "No active break",
-        description: "Active Break passes require a live break window.",
+        description: "Break-end passes require a live break window.",
       });
       return;
     }
@@ -67,24 +66,22 @@ export function CreatePassButton() {
     try {
       const duration = Number(durationMinutes) || 30;
       const expiresAt =
-        passType === "active_break" && activeBreak
+        durationMode === "end_of_break" && activeBreak
           ? activeBreak.endTime
           : Date.now() + duration * 60 * 1000;
       await createPass({
         studentName,
-        studentId: studentId || undefined,
         studentGender,
         reason,
         issuedBy: user.name,
         issuedById: user.uid,
         expiresAt,
-        passType,
-        durationMinutes: passType === "active_break" ? undefined : duration,
+        passType: durationMode === "end_of_break" ? "active_break" : "time_specified",
+        durationMinutes: durationMode === "specific" ? duration : undefined,
       }, user.uid);
       setIsCreating(false);
       setIsOpen(false);
       setStudentName("");
-      setStudentId("");
       setStudentGender("");
       setReason("");
       toast({
@@ -119,11 +116,11 @@ export function CreatePassButton() {
       }
       title="Issue New Pass"
       description={
-        passType === "active_break"
+        durationMode === "end_of_break"
           ? isBreakActive
             ? `This pass will be valid for the rest of the ${activeBreak?.name?.toLowerCase()}.`
-            : "Active Break passes require a live break window."
-          : "Configure the duration for this pass type."
+            : "Break-end passes require a live break window."
+          : "Configure the duration for this pass."
       }
       contentClassName="sm:max-w-[425px]"
       footer={
@@ -139,35 +136,40 @@ export function CreatePassButton() {
     >
       <div className="grid gap-4 py-4">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-          <Label htmlFor="pass-type" className="sm:text-right">
-            Type
-          </Label>
-          <Select value={passType} onValueChange={(value) => setPassType(value as any)}>
-            <SelectTrigger id="pass-type" className="sm:col-span-3">
-              <SelectValue placeholder="Select pass type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active_break">Active Break</SelectItem>
-              <SelectItem value="time_specified">Time-Specified</SelectItem>
-              <SelectItem value="community">Community</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
           <Label htmlFor="pass-gender" className="sm:text-right">
             Gender
           </Label>
+          <div className="flex flex-wrap gap-2 sm:col-span-3">
+            <Button
+              type="button"
+              variant={studentGender === "male" ? "default" : "outline"}
+              onClick={() => setStudentGender("male")}
+            >
+              Boy
+            </Button>
+            <Button
+              type="button"
+              variant={studentGender === "female" ? "default" : "outline"}
+              onClick={() => setStudentGender("female")}
+            >
+              Girl
+            </Button>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+          <Label htmlFor="pass-duration" className="sm:text-right">
+            Duration
+          </Label>
           <Select
-            value={studentGender}
-            onValueChange={(value) => setStudentGender(value as any)}
+            value={durationMode}
+            onValueChange={(value) => setDurationMode(value as any)}
           >
-            <SelectTrigger id="pass-gender" className="sm:col-span-3">
-              <SelectValue placeholder="Select gender" />
+            <SelectTrigger id="pass-duration" className="sm:col-span-3">
+              <SelectValue placeholder="Select duration" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="male">Male</SelectItem>
-              <SelectItem value="female">Female</SelectItem>
-              <SelectItem value="mixed">Mixed</SelectItem>
+              <SelectItem value="end_of_break">Until end of break</SelectItem>
+              <SelectItem value="specific">Specific duration</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -184,18 +186,6 @@ export function CreatePassButton() {
           />
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-          <Label htmlFor="student-id" className="sm:text-right">
-            Student ID
-          </Label>
-          <Input
-            id="student-id"
-            placeholder="Optional ID"
-            className="sm:col-span-3"
-            value={studentId}
-            onChange={(event) => setStudentId(event.target.value)}
-          />
-        </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
           <Label htmlFor="reason" className="sm:text-right">
             Reason
           </Label>
@@ -207,7 +197,7 @@ export function CreatePassButton() {
             onChange={(event) => setReason(event.target.value)}
           />
         </div>
-        {passType !== "active_break" ? (
+        {durationMode === "specific" ? (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
             <Label htmlFor="duration" className="sm:text-right">
               Duration (min)

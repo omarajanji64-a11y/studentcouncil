@@ -9,19 +9,30 @@ import { MotionModal } from "@/components/motion/motion-modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useBreakStatus } from "@/hooks/use-break-status";
 import { createPass } from "@/hooks/use-firestore";
 import { isStaff } from "@/lib/permissions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function OverridePassButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [studentName, setStudentName] = useState("");
-  const [studentId, setStudentId] = useState("");
-  const [studentGender, setStudentGender] = useState<"male" | "female" | "mixed" | "">("");
+  const [studentGender, setStudentGender] = useState<"male" | "female" | "">("");
   const [reason, setReason] = useState("");
-  const [expiresAt, setExpiresAt] = useState("");
+  const [durationMode, setDurationMode] = useState<"end_of_break" | "specific">(
+    "end_of_break"
+  );
+  const [durationMinutes, setDurationMinutes] = useState("30");
   const { toast } = useToast();
   const { user } = useAuth();
+  const { activeBreak, isBreakActive } = useBreakStatus();
 
   if (!isStaff(user)) return null;
 
@@ -43,16 +54,25 @@ export function OverridePassButton() {
       });
       return;
     }
+    if (durationMode === "end_of_break" && !activeBreak) {
+      toast({
+        variant: "destructive",
+        title: "No active break",
+        description: "Break-end overrides require a live break window.",
+      });
+      return;
+    }
 
     setIsCreating(true);
     try {
-      const resolvedExpiresAt = expiresAt
-        ? new Date(expiresAt).getTime()
-        : Date.now() + 30 * 60 * 1000;
+      const duration = Number(durationMinutes) || 30;
+      const resolvedExpiresAt =
+        durationMode === "end_of_break" && activeBreak
+          ? activeBreak.endTime
+          : Date.now() + duration * 60 * 1000;
       await createPass(
         {
           studentName,
-          studentId: studentId || undefined,
           studentGender,
           reason,
           issuedBy: user.name,
@@ -60,16 +80,17 @@ export function OverridePassButton() {
           expiresAt: resolvedExpiresAt,
           passType: "override",
           override: true,
+          durationMinutes: durationMode === "specific" ? duration : undefined,
         },
         user.uid
       );
       setIsCreating(false);
       setIsOpen(false);
       setStudentName("");
-      setStudentId("");
       setStudentGender("");
       setReason("");
-      setExpiresAt("");
+      setDurationMinutes("30");
+      setDurationMode("end_of_break");
       toast({
         title: "Override Created",
         description: "Emergency override pass has been issued.",
@@ -99,7 +120,13 @@ export function OverridePassButton() {
         </Button>
       }
       title="Emergency Override"
-      description="Bypasses all limits. Optional time override; defaults to 30 minutes."
+      description={
+        durationMode === "end_of_break"
+          ? isBreakActive
+            ? `This override lasts until the end of the ${activeBreak?.name?.toLowerCase()}.`
+            : "Break-end overrides require a live break window."
+          : "Set a specific duration for this override."
+      }
       contentClassName="sm:max-w-[460px]"
       footer={
         <Button type="submit" variant="destructive" onClick={handleOverride} disabled={isCreating}>
@@ -131,34 +158,42 @@ export function OverridePassButton() {
           />
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-          <Label htmlFor="override-student-id" className="sm:text-right">
-            Student ID
-          </Label>
-          <Input
-            id="override-student-id"
-            placeholder="Optional ID"
-            className="sm:col-span-3"
-            value={studentId}
-            onChange={(event) => setStudentId(event.target.value)}
-          />
-        </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
           <Label htmlFor="override-gender" className="sm:text-right">
             Gender
           </Label>
-          <select
-            id="override-gender"
-            className="sm:col-span-3 h-10 rounded-md border border-input bg-background px-3 text-sm"
-            value={studentGender}
-            onChange={(event) =>
-              setStudentGender(event.target.value as any)
-            }
+          <div className="flex flex-wrap gap-2 sm:col-span-3">
+            <Button
+              type="button"
+              variant={studentGender === "male" ? "default" : "outline"}
+              onClick={() => setStudentGender("male")}
+            >
+              Boy
+            </Button>
+            <Button
+              type="button"
+              variant={studentGender === "female" ? "default" : "outline"}
+              onClick={() => setStudentGender("female")}
+            >
+              Girl
+            </Button>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+          <Label htmlFor="override-duration" className="sm:text-right">
+            Duration
+          </Label>
+          <Select
+            value={durationMode}
+            onValueChange={(value) => setDurationMode(value as any)}
           >
-            <option value="">Select gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="mixed">Mixed</option>
-          </select>
+            <SelectTrigger id="override-duration" className="sm:col-span-3">
+              <SelectValue placeholder="Select duration" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="end_of_break">Until end of break</SelectItem>
+              <SelectItem value="specific">Specific duration</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
           <Label htmlFor="override-reason" className="sm:text-right">
@@ -172,18 +207,21 @@ export function OverridePassButton() {
             onChange={(event) => setReason(event.target.value)}
           />
         </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-          <Label htmlFor="override-expires" className="sm:text-right">
-            Expires At
-          </Label>
-          <Input
-            id="override-expires"
-            type="datetime-local"
-            className="sm:col-span-3"
-            value={expiresAt}
-            onChange={(event) => setExpiresAt(event.target.value)}
-          />
-        </div>
+        {durationMode === "specific" ? (
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+            <Label htmlFor="override-duration-mins" className="sm:text-right">
+              Duration (min)
+            </Label>
+            <Input
+              id="override-duration-mins"
+              type="number"
+              min={5}
+              className="sm:col-span-3"
+              value={durationMinutes}
+              onChange={(event) => setDurationMinutes(event.target.value)}
+            />
+          </div>
+        ) : null}
       </div>
     </MotionModal>
   );
