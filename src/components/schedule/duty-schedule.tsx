@@ -493,7 +493,7 @@ export function DutyScheduleEditor() {
                         const duty = dutyGrid.get(key);
                         return (
                           <TableCell key={key} className="align-top text-center">
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-sm font-semibold text-slate-950 dark:text-slate-100">
                               {duty?.memberNames?.length
                                 ? duty.memberNames.join(", ")
                                 : "Unassigned"}
@@ -555,7 +555,7 @@ export function DutyScheduleEditor() {
                       <TableCell className="text-muted-foreground">
                         {duty.title ?? "—"}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="font-semibold text-slate-950 dark:text-slate-100">
                         {duty.memberNames?.length ? duty.memberNames.join(", ") : "Unassigned"}
                       </TableCell>
                       {staff ? (
