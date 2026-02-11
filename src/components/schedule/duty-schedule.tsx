@@ -14,7 +14,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MotionModal } from "@/components/motion/motion-modal";
@@ -54,7 +53,6 @@ export function DutyScheduleEditor() {
   const [editor, setEditor] = useState<EditorState>({ open: false, duty: null });
   const [scope, setScope] = useState<"personal" | "all">("personal");
   const [genderScope, setGenderScope] = useState<"all" | "boys" | "girls">("all");
-  const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -126,13 +124,11 @@ export function DutyScheduleEditor() {
   const openEditor = (duty?: Duty) => {
     if (!staff) return;
     if (duty) {
-      setTitle(duty.title);
       setLocation(duty.location ?? "");
       setStartTime(format(new Date(duty.startTime), "yyyy-MM-dd'T'HH:mm"));
       setEndTime(format(new Date(duty.endTime), "yyyy-MM-dd'T'HH:mm"));
       setMemberIds(duty.memberIds);
     } else {
-      setTitle("");
       setLocation("");
       setStartTime("");
       setEndTime("");
@@ -143,11 +139,11 @@ export function DutyScheduleEditor() {
 
   const handleSave = async () => {
     if (!staff || !user) return;
-    if (!title || !startTime || !endTime || !location.trim()) {
+    if (!startTime || !endTime || !location.trim()) {
       toast({
         variant: "destructive",
         title: "Missing fields",
-        description: "Title, location, start time, and end time are required.",
+        description: "Location, start time, and end time are required.",
       });
       return;
     }
@@ -157,9 +153,10 @@ export function DutyScheduleEditor() {
       .filter((option) => memberIds.includes(option.id))
       .map((option) => option.name);
     const locationValue = location.trim();
+    const derivedTitle = locationValue;
     if (editor.duty) {
       const update: Partial<Duty> = {
-        title,
+        title: derivedTitle,
         startTime: start,
         endTime: end,
         memberIds,
@@ -175,7 +172,7 @@ export function DutyScheduleEditor() {
       toast({ title: "Duty updated", description: "Shift has been updated." });
     } else {
       const createPayload: Omit<Duty, "id"> = {
-        title,
+        title: derivedTitle,
         startTime: start,
         endTime: end,
         memberIds,
@@ -327,15 +324,6 @@ export function DutyScheduleEditor() {
         }
       >
         <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="duty-title">Title</Label>
-            <Input
-              id="duty-title"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="e.g., Front Counter"
-            />
-          </div>
           <div className="grid gap-2">
             <Label htmlFor="duty-location">Location</Label>
             <Select value={location} onValueChange={setLocation}>
