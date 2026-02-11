@@ -1,11 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { format, addDays, addMonths, startOfWeek, startOfMonth, endOfMonth, endOfWeek, isSameMonth, isSameDay } from "date-fns";
+import { format } from "date-fns";
 import { CalendarDays, PlusCircle, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,14 +23,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { createDuty, deleteDuty, updateDuty, useDuties, useUsers } from "@/hooks/use-firestore";
 import { isStaff } from "@/lib/permissions";
 import type { Duty } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 type EditorState = {
   open: boolean;
   duty: Duty | null;
 };
-
-const buildDateKey = (date: Date) => format(date, "yyyy-MM-dd");
 
 export function DutyScheduleEditor() {
   const { user } = useAuth();
@@ -30,8 +35,6 @@ export function DutyScheduleEditor() {
   const { data: duties, loading, refresh } = useDuties({ enabled: !!user, realtime: false });
   const { data: users } = useUsers({ enabled: staff, realtime: false });
   const { toast } = useToast();
-  const [view, setView] = useState<"day" | "week" | "month">("week");
-  const [anchorDate, setAnchorDate] = useState(() => new Date());
   const [editor, setEditor] = useState<EditorState>({ open: false, duty: null });
   const [scope, setScope] = useState<"personal" | "all">("personal");
   const [genderScope, setGenderScope] = useState<"all" | "boys" | "girls">("all");
@@ -87,16 +90,22 @@ export function DutyScheduleEditor() {
     return genderFilteredDuties;
   }, [genderFilteredDuties, scope, user]);
 
-  const dutiesByDay = useMemo(() => {
-    const sorted = [...scopedDuties].sort((a, b) => a.startTime - b.startTime);
-    const map = new Map<string, Duty[]>();
-    sorted.forEach((duty) => {
-      const key = buildDateKey(new Date(duty.startTime));
-      if (!map.has(key)) map.set(key, []);
-      map.set(key, [...(map.get(key) ?? []), duty]);
-    });
-    return map;
-  }, [scopedDuties]);
+  const todayRange = useMemo(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    return { start: start.getTime(), end: end.getTime() };
+  }, []);
+
+  const todayDuties = useMemo(() => {
+    return [...scopedDuties]
+      .filter(
+        (duty) =>
+          duty.startTime <= todayRange.end && duty.endTime >= todayRange.start
+      )
+      .sort((a, b) => a.startTime - b.startTime);
+  }, [scopedDuties, todayRange]);
 
   const openEditor = (duty?: Duty) => {
     if (!staff) return;
@@ -174,37 +183,7 @@ export function DutyScheduleEditor() {
     toast({ title: "Duty deleted", description: "Duty has been removed." });
   };
 
-  const handleDrop = async (date: Date, dutyId?: string) => {
-    if (!staff || !user || !dutyId) return;
-    const duty = duties.find((item) => item.id === dutyId);
-    if (!duty) return;
-    const start = new Date(duty.startTime);
-    const end = new Date(duty.endTime);
-    const target = new Date(date);
-    const diffMinutes = (end.getTime() - start.getTime()) / 60000;
-    target.setHours(start.getHours(), start.getMinutes(), 0, 0);
-    const newStart = target.getTime();
-    const newEnd = newStart + diffMinutes * 60 * 1000;
-    await updateDuty(dutyId, { startTime: newStart, endTime: newEnd }, user.uid);
-    refresh?.();
-  };
-
-  const dayRange = useMemo(() => {
-    if (view === "day") return [anchorDate];
-    if (view === "week") {
-      const start = startOfWeek(anchorDate, { weekStartsOn: 1 });
-      return Array.from({ length: 7 }, (_, i) => addDays(start, i));
-    }
-    const start = startOfWeek(startOfMonth(anchorDate), { weekStartsOn: 1 });
-    const end = endOfWeek(endOfMonth(anchorDate), { weekStartsOn: 1 });
-    const days = [];
-    let cursor = start;
-    while (cursor <= end) {
-      days.push(cursor);
-      cursor = addDays(cursor, 1);
-    }
-    return days;
-  }, [anchorDate, view]);
+  const todayLabel = useMemo(() => format(new Date(), "PPPP"), []);
 
   return (
     <Card>
@@ -215,35 +194,10 @@ export function DutyScheduleEditor() {
             Duty Schedule
           </CardTitle>
           <CardDescription>
-            Plan shifts with exact times, filter by boys/girls, and assign members.
+            Today: {todayLabel}
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              setAnchorDate((prev) =>
-                view === "month" ? addMonths(prev, -1) : addDays(prev, view === "week" ? -7 : -1)
-              )
-            }
-          >
-            Prev
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setAnchorDate(new Date())}>
-            Today
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              setAnchorDate((prev) =>
-                view === "month" ? addMonths(prev, 1) : addDays(prev, view === "week" ? 7 : 1)
-              )
-            }
-          >
-            Next
-          </Button>
           {staff ? (
             <Button size="sm" className="gap-1" onClick={() => openEditor()}>
               <PlusCircle className="h-4 w-4" />
@@ -253,137 +207,94 @@ export function DutyScheduleEditor() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Tabs value={view} onValueChange={(value) => setView(value as any)}>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <Tabs value={scope} onValueChange={(value) => setScope(value as any)}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Tabs value={scope} onValueChange={(value) => setScope(value as any)}>
+            <TabsList>
+              <TabsTrigger value="personal">Personal</TabsTrigger>
+              <TabsTrigger value="all">All</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {staff ? (
+            <Tabs
+              value={genderScope}
+              onValueChange={(value) => setGenderScope(value as any)}
+            >
               <TabsList>
-                <TabsTrigger value="personal">Personal</TabsTrigger>
                 <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="boys">Boys</TabsTrigger>
+                <TabsTrigger value="girls">Girls</TabsTrigger>
               </TabsList>
             </Tabs>
-            {staff ? (
-              <Tabs
-                value={genderScope}
-                onValueChange={(value) => setGenderScope(value as any)}
-              >
-                <TabsList>
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="boys">Boys</TabsTrigger>
-                  <TabsTrigger value="girls">Girls</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            ) : null}
-            <TabsList>
-              <TabsTrigger value="day">Day</TabsTrigger>
-              <TabsTrigger value="week">Week</TabsTrigger>
-              <TabsTrigger value="month">Month</TabsTrigger>
-            </TabsList>
-          </div>
-          <TabsContent value={view}>
-            <div
-              className={cn(
-                "grid gap-3",
-                view === "month"
-                  ? "grid-cols-2 sm:grid-cols-4 lg:grid-cols-7"
-                  : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-              )}
-            >
-              {dayRange.map((date) => {
-                const key = buildDateKey(date);
-                const dailyDuties = dutiesByDay.get(key) ?? [];
-                return (
-                  <div
-                    key={key}
-                    className={cn(
-                      "rounded-lg border bg-muted/20 p-3",
-                      view === "month" && !isSameMonth(date, anchorDate) && "opacity-50"
-                    )}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={(event) => {
-                      event.preventDefault();
-                      const dutyId = event.dataTransfer.getData("text/plain");
-                      handleDrop(date, dutyId);
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold">
-                        {format(date, view === "month" ? "MMM d" : "EEE, MMM d")}
-                      </p>
-                      {isSameDay(date, new Date()) ? (
-                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                          Today
-                        </span>
+          ) : null}
+        </div>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Time</TableHead>
+                <TableHead>Duty</TableHead>
+                <TableHead>Members</TableHead>
+                {staff ? <TableHead className="text-right">Actions</TableHead> : null}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={staff ? 4 : 3} className="h-20 text-center text-sm text-muted-foreground">
+                    Loading duties...
+                  </TableCell>
+                </TableRow>
+              ) : todayDuties.length ? (
+                todayDuties.map((duty) => (
+                  <TableRow key={duty.id}>
+                    <TableCell className="font-medium">
+                      {format(new Date(duty.startTime), "p")} - {format(new Date(duty.endTime), "p")}
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium">{duty.location ?? duty.title}</div>
+                      {duty.location && duty.title && duty.location !== duty.title ? (
+                        <div className="text-xs text-muted-foreground">{duty.title}</div>
                       ) : null}
-                    </div>
-                    <div className="mt-3 space-y-2">
-                      {loading ? (
-                        <div className="text-xs text-muted-foreground">Loading...</div>
-                      ) : dailyDuties.length ? (
-                        dailyDuties.map((duty) => (
-                          <div
-                            key={duty.id}
-                            draggable={staff}
-                            onDragStart={(event) => event.dataTransfer.setData("text/plain", duty.id)}
-                            className="rounded-md border bg-background p-2 text-xs shadow-sm"
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {duty.memberNames?.length ? duty.memberNames.join(", ") : "Unassigned"}
+                    </TableCell>
+                    {staff ? (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            onClick={() => openEditor(duty)}
                           >
-                            <div className="flex items-center justify-between gap-2">
-                              <div>
-                                <p className="font-semibold">
-                                  {duty.location ?? duty.title}
-                                </p>
-                                {duty.location && duty.title && duty.location !== duty.title ? (
-                                  <p className="text-[10px] text-muted-foreground">
-                                    {duty.title}
-                                  </p>
-                                ) : null}
-                              </div>
-                              {staff ? (
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-6 w-6"
-                                    onClick={() => openEditor(duty)}
-                                  >
-                                    <span className="sr-only">Edit</span>
-                                    <Users className="h-3.5 w-3.5" />
-                                  </Button>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-6 w-6 text-destructive"
-                                    onClick={() => handleDelete(duty.id)}
-                                  >
-                                    <span className="sr-only">Delete</span>
-                                    <X className="h-3.5 w-3.5" />
-                                  </Button>
-                                </div>
-                              ) : null}
-                            </div>
-                            <p className="text-[11px] text-muted-foreground">
-                              {format(new Date(duty.startTime), "p")} - {format(new Date(duty.endTime), "p")}
-                            </p>
-                            {duty.memberNames?.length ? (
-                              <p className="mt-1 text-[11px] text-muted-foreground">
-                                {duty.memberNames.join(", ")}
-                              </p>
-                            ) : (
-                              <p className="mt-1 text-[11px] text-muted-foreground">
-                                No members assigned
-                              </p>
-                            )}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-xs text-muted-foreground">No duties</div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </TabsContent>
-        </Tabs>
+                            <span className="sr-only">Edit</span>
+                            <Users className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-destructive"
+                            onClick={() => handleDelete(duty.id)}
+                          >
+                            <span className="sr-only">Delete</span>
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    ) : null}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={staff ? 4 : 3} className="h-20 text-center text-sm text-muted-foreground">
+                    No duties scheduled for today.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
 
       <MotionModal
