@@ -105,22 +105,10 @@ export function DutyScheduleEditor() {
     return genderFilteredDuties;
   }, [genderFilteredDuties, scope, user]);
 
-  const todayRange = useMemo(() => {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const end = new Date();
-    end.setHours(23, 59, 59, 999);
-    return { start: start.getTime(), end: end.getTime() };
-  }, []);
-
   const todayDuties = useMemo(() => {
     return [...scopedDuties]
-      .filter(
-        (duty) =>
-          duty.startTime <= todayRange.end && duty.endTime >= todayRange.start
-      )
       .sort((a, b) => a.startTime - b.startTime);
-  }, [scopedDuties, todayRange]);
+  }, [scopedDuties]);
 
   const openEditor = (duty?: Duty) => {
     if (!staff) return;
@@ -197,8 +185,6 @@ export function DutyScheduleEditor() {
     toast({ title: "Duty deleted", description: "Duty has been removed." });
   };
 
-  const todayLabel = useMemo(() => format(new Date(), "PPPP"), []);
-
   return (
     <Card>
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -207,9 +193,7 @@ export function DutyScheduleEditor() {
             <CalendarDays className="h-5 w-5 text-primary" />
             Duty Schedule
           </CardTitle>
-          <CardDescription>
-            Today: {todayLabel}
-          </CardDescription>
+          <CardDescription>Daily duty schedule (time only).</CardDescription>
         </div>
         <div className="flex items-center gap-2">
           {staff ? (
@@ -303,7 +287,7 @@ export function DutyScheduleEditor() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={staff ? 5 : 4} className="h-20 text-center text-sm text-muted-foreground">
-                    No duties scheduled for today.
+                    No duties scheduled.
                   </TableCell>
                 </TableRow>
               )}
