@@ -63,7 +63,7 @@ type AssignmentEditorState = {
   memberIds: string[];
 };
 
-const dutyLocations = [
+const girlsDutyLocations = [
   "Girls elevator",
   "Girls boys stairs",
   "Girls girls stairs",
@@ -115,6 +115,21 @@ export function DutyScheduleEditor() {
     location: null,
     memberIds: [],
   });
+  const activeLocations = useMemo(() => {
+    if (genderScope === "girls") return girlsDutyLocations;
+    if (genderScope === "boys") return [];
+    return girlsDutyLocations;
+  }, [genderScope]);
+
+  const allowedLocationSet = useMemo(() => {
+    if (genderScope === "all") {
+      return new Set(girlsDutyLocations.map(normalizeLocation));
+    }
+    if (genderScope === "girls") {
+      return new Set(girlsDutyLocations.map(normalizeLocation));
+    }
+    return new Set<string>();
+  }, [genderScope]);
 
   const memberOptions = useMemo(
     () => users.map((member) => ({ id: member.uid, name: member.name })),
@@ -141,19 +156,9 @@ export function DutyScheduleEditor() {
   }, [staff, user?.gender]);
 
   const genderFilteredDuties = useMemo(() => {
-    if (!user?.gender && !staff) return duties;
-    const token =
-      genderScope === "all"
-        ? null
-        : genderScope;
-    return duties.filter((duty) => {
-      const haystack = `${duty.location ?? ""} ${duty.title ?? ""}`.toLowerCase();
-      const hasGender = haystack.includes("boys") || haystack.includes("girls");
-      if (!hasGender) return true;
-      if (!token) return true;
-      return haystack.includes(token);
-    });
-  }, [duties, staff, user, genderScope]);
+    if (genderScope === "all") return duties;
+    return duties.filter((duty) => allowedLocationSet.has(normalizeLocation(duty.location)));
+  }, [duties, genderScope, allowedLocationSet]);
 
   const scopedDuties = useMemo(() => {
     if (scope === "personal" && user) {
@@ -187,12 +192,12 @@ export function DutyScheduleEditor() {
   }, [allViewDuties]);
 
   const locationRows = useMemo<LocationRow[]>(() => {
-    return dutyLocations.map((location) => ({
+    return activeLocations.map((location) => ({
       key: normalizeLocation(location),
       value: location,
       label: location,
     }));
-  }, []);
+  }, [activeLocations]);
 
   const dutyGrid = useMemo(() => {
     const map = new Map<string, Duty>();
@@ -302,9 +307,17 @@ export function DutyScheduleEditor() {
       return;
     }
     if (!slotEditor.slot) {
+      if (!activeLocations.length) {
+        toast({
+          variant: "destructive",
+          title: "No locations",
+          description: "Add duty locations before creating a time slot.",
+        });
+        return;
+      }
       const start = applyTime(Date.now(), slotEditor.start);
       const end = applyTime(Date.now(), slotEditor.end);
-      const baseLocation = dutyLocations[0];
+      const baseLocation = activeLocations[0];
       await createDuty(
         {
           title: baseLocation,
@@ -397,6 +410,14 @@ export function DutyScheduleEditor() {
 
   const openNewSlotEditor = () => {
     if (!staff) return;
+    if (!activeLocations.length) {
+      toast({
+        variant: "destructive",
+        title: "No locations",
+        description: "This view has no preset duty locations.",
+      });
+      return;
+    }
     setSlotEditor({ open: true, slot: null, start: "", end: "" });
   };
 
@@ -493,11 +514,13 @@ export function DutyScheduleEditor() {
                         const duty = dutyGrid.get(key);
                         return (
                           <TableCell key={key} className="align-top text-center">
-                            <div className="text-sm font-semibold text-slate-950 dark:text-slate-100">
-                              {duty?.memberNames?.length
-                                ? duty.memberNames.join(", ")
-                                : "Unassigned"}
-                            </div>
+                            {duty?.memberNames?.length ? (
+                              <div className="text-sm font-semibold text-slate-950 dark:text-slate-100">
+                                {duty.memberNames.join(", ")}
+                              </div>
+                            ) : (
+                              <div className="text-sm text-muted-foreground">Unassigned</div>
+                            )}
                             {staff ? (
                               <Button
                                 size="sm"
@@ -555,8 +578,14 @@ export function DutyScheduleEditor() {
                       <TableCell className="text-muted-foreground">
                         {duty.title ?? "—"}
                       </TableCell>
-                      <TableCell className="font-semibold text-slate-950 dark:text-slate-100">
-                        {duty.memberNames?.length ? duty.memberNames.join(", ") : "Unassigned"}
+                      <TableCell>
+                        {duty.memberNames?.length ? (
+                          <span className="font-semibold text-slate-950 dark:text-slate-100">
+                            {duty.memberNames.join(", ")}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">Unassigned</span>
+                        )}
                       </TableCell>
                       {staff ? (
                         <TableCell className="text-right">
@@ -617,7 +646,7 @@ export function DutyScheduleEditor() {
                 <SelectValue placeholder="Select location" />
               </SelectTrigger>
               <SelectContent>
-                {dutyLocations.map((loc) => (
+                {activeLocations.map((loc) => (
                   <SelectItem key={loc} value={loc}>
                     {loc}
                   </SelectItem>
