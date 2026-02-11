@@ -71,6 +71,16 @@ const girlsDutyLocations = [
   "YKS girls",
   "Canteen",
 ];
+const boysDutyLocations = [
+  "4th floor door next to elevator",
+  "4th floor boys staircase",
+  "4th floor girls staircase",
+  "4th midschool help",
+  "2th floor door next to elevator",
+  "2th floor boys staircase",
+];
+
+const allDutyLocations = [...girlsDutyLocations, ...boysDutyLocations];
 
 const normalizeLocation = (value?: string) => (value ?? "").trim().toLowerCase();
 
@@ -117,18 +127,18 @@ export function DutyScheduleEditor() {
   });
   const activeLocations = useMemo(() => {
     if (genderScope === "girls") return girlsDutyLocations;
-    if (genderScope === "boys") return [];
-    return girlsDutyLocations;
+    if (genderScope === "boys") return boysDutyLocations;
+    return allDutyLocations;
   }, [genderScope]);
 
   const allowedLocationSet = useMemo(() => {
     if (genderScope === "all") {
-      return new Set(girlsDutyLocations.map(normalizeLocation));
+      return new Set(allDutyLocations.map(normalizeLocation));
     }
     if (genderScope === "girls") {
       return new Set(girlsDutyLocations.map(normalizeLocation));
     }
-    return new Set<string>();
+    return new Set(boysDutyLocations.map(normalizeLocation));
   }, [genderScope]);
 
   const memberOptions = useMemo(
