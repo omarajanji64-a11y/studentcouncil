@@ -38,10 +38,7 @@ export default function ComplaintsPage() {
     >
   >({});
   const [loading, setLoading] = useState(false);
-  const [memberLoading, setMemberLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [memberComplaints, setMemberComplaints] = useState<Complaint[]>([]);
-  const [memberRefresh, setMemberRefresh] = useState(0);
   const pageSize = 10;
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -51,10 +48,10 @@ export default function ComplaintsPage() {
   }, [searchInput]);
 
   const normalizedSearch = search.trim().toLowerCase();
-  const isLivePage = staffView && !normalizedSearch && pageIndex === 0;
+  const isLivePage = !normalizedSearch && pageIndex === 0;
   const queryKey = useMemo(
-    () => `${staffView ? "staff" : "member"}:${user?.uid ?? ""}:${normalizedSearch}`,
-    [staffView, user?.uid, normalizedSearch]
+    () => `all:${normalizedSearch}`,
+    [normalizedSearch]
   );
 
   useEffect(() => {
@@ -68,7 +65,6 @@ export default function ComplaintsPage() {
 
   useEffect(() => {
     if (!user) return;
-    if (!staffView) return;
     if (isLivePage) return;
     if (currentPage) return;
     const col = collections.complaints();
@@ -83,10 +79,6 @@ export default function ComplaintsPage() {
     setError(null);
 
     const constraints: any[] = [];
-    if (!staffView) {
-      constraints.push(where("studentId", "==", user.uid));
-    }
-
     if (normalizedSearch) {
       constraints.push(where("targetNameLower", ">=", normalizedSearch));
       constraints.push(where("targetNameLower", "<=", `${normalizedSearch}\uf8ff`));
@@ -133,7 +125,7 @@ export default function ComplaintsPage() {
     return () => {
       active = false;
     };
-  }, [user, staffView, normalizedSearch, pageIndex, currentPage, pageInfo]);
+  }, [user, normalizedSearch, pageIndex, currentPage, pageInfo]);
 
   useEffect(() => {
     if (!user) return;
@@ -169,61 +161,10 @@ export default function ComplaintsPage() {
     return () => unsubscribe();
   }, [user, isLivePage, pageSize]);
 
-  useEffect(() => {
-    if (!user) return;
-    if (staffView) return;
-    const col = collections.complaints();
-    if (!col) {
-      setError("Firestore not configured.");
-      return;
-    }
-    let active = true;
-    setMemberLoading(true);
-    setError(null);
-    getDocs(query(col, where("studentId", "==", user.uid)))
-      .then((snapshot) => {
-        if (!active) return;
-        const docs = snapshot.docs.map((doc) =>
-          converters.complaint.fromFirestore(doc)
-        );
-        setMemberComplaints(docs);
-        setMemberLoading(false);
-      })
-      .catch((err) => {
-        if (!active) return;
-        setError(err instanceof Error ? err.message : "Failed to load complaints.");
-        setMemberLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [user, staffView, memberRefresh]);
-
   if (!user) return null;
-
-  const memberFiltered = useMemo(() => {
-    let list = [...memberComplaints].sort((a, b) => b.timestamp - a.timestamp);
-    if (normalizedSearch) {
-      list = list.filter((complaint) =>
-        (complaint.targetName ?? complaint.title ?? "")
-          .toLowerCase()
-          .includes(normalizedSearch)
-      );
-    }
-    return list;
-  }, [memberComplaints, normalizedSearch]);
-
-  const memberTotalPages = Math.max(1, Math.ceil(memberFiltered.length / pageSize));
-  const memberPage = memberFiltered.slice(
-    pageIndex * pageSize,
-    pageIndex * pageSize + pageSize
-  );
-
-  const complaints = staffView ? currentPage ?? [] : memberPage;
-  const hasNext = staffView
-    ? currentInfo?.hasNext ?? false
-    : pageIndex + 1 < memberTotalPages;
-  const isLoading = staffView ? loading : memberLoading;
+  const complaints = currentPage ?? [];
+  const hasNext = currentInfo?.hasNext ?? false;
+  const isLoading = loading;
 
   return (
     <div className="space-y-6">
@@ -245,10 +186,7 @@ export default function ComplaintsPage() {
           >
             Prev
           </Button>
-          <div className="text-xs text-muted-foreground">
-            Page {pageIndex + 1}
-            {!staffView ? ` of ${memberTotalPages}` : ""}
-          </div>
+          <div className="text-xs text-muted-foreground">Page {pageIndex + 1}</div>
           <Button
             size="sm"
             variant="outline"
@@ -275,13 +213,10 @@ export default function ComplaintsPage() {
               setPages({});
               setPageInfo({});
               setPageIndex(0);
-              if (!staffView) {
-                setMemberRefresh((prev) => prev + 1);
-              }
             }}
             searchValue={searchInput}
             onSearchChange={(value) => setSearchInput(value)}
-            serverSide={staffView}
+            serverSide
           />
         </CardContent>
       </Card>
