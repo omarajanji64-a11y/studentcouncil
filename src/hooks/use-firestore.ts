@@ -232,11 +232,18 @@ type LogQueryOptions = {
   enabled?: boolean;
   limit?: number;
   sinceMs?: number;
+  untilMs?: number;
   realtime?: boolean;
 };
 
 export const useLogs = (options: LogQueryOptions = {}) => {
-  const { enabled = true, limit: limitCount, sinceMs, realtime = true } = options;
+  const {
+    enabled = true,
+    limit: limitCount,
+    sinceMs,
+    untilMs,
+    realtime = true,
+  } = options;
   const q = useMemo(() => {
     if (!enabled) return null;
     const col = collections.logs();
@@ -245,24 +252,36 @@ export const useLogs = (options: LogQueryOptions = {}) => {
     if (typeof sinceMs === "number") {
       constraints.push(where("timestamp", ">=", Timestamp.fromMillis(sinceMs)));
     }
+    if (typeof untilMs === "number") {
+      constraints.push(where("timestamp", "<=", Timestamp.fromMillis(untilMs)));
+    }
     constraints.push(orderBy("timestamp", "desc"));
     if (limitCount) constraints.push(limit(limitCount));
     return query(col, ...constraints);
-  }, [enabled, sinceMs, limitCount]);
+  }, [enabled, sinceMs, untilMs, limitCount]);
   return useCollection<Log>(q, converters.log.fromFirestore, realtime);
 };
 
 export const useUserLogs = (
   uid?: string,
-  options: { enabled?: boolean; realtime?: boolean } = {}
+  options: { enabled?: boolean; realtime?: boolean; sinceMs?: number; untilMs?: number; limit?: number } = {}
 ) => {
-  const { enabled = true, realtime = true } = options;
+  const { enabled = true, realtime = true, sinceMs, untilMs, limit: limitCount } = options;
   const q = useMemo(() => {
     if (!enabled || !uid) return null;
     const col = collections.logs();
     if (!col) return null;
-    return query(col, where("userId", "==", uid));
-  }, [uid, enabled]);
+    const constraints: any[] = [where("userId", "==", uid)];
+    if (typeof sinceMs === "number") {
+      constraints.push(where("timestamp", ">=", Timestamp.fromMillis(sinceMs)));
+    }
+    if (typeof untilMs === "number") {
+      constraints.push(where("timestamp", "<=", Timestamp.fromMillis(untilMs)));
+    }
+    constraints.push(orderBy("timestamp", "desc"));
+    if (limitCount) constraints.push(limit(limitCount));
+    return query(col, ...constraints);
+  }, [uid, enabled, sinceMs, untilMs, limitCount]);
   return useCollection<Log>(q, converters.log.fromFirestore, realtime);
 };
 
@@ -768,8 +787,12 @@ export const createComplaint = async (
 ) => {
   const col = collections.complaints();
   if (!col) throw new Error("Firestore not configured");
+  const targetName = (complaint.title ?? "").trim();
+  const targetNameLower = targetName.toLowerCase();
   const ref = await addDoc(col, {
     ...complaint,
+    targetName,
+    targetNameLower,
     status: complaint.status ?? "Open",
     timestamp: serverCreatedAt(),
   });

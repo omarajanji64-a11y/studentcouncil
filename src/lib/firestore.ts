@@ -138,6 +138,8 @@ export const converters = {
         id: snap.id,
         studentId: data.studentId ?? "",
         studentName: data.studentName ?? undefined,
+        targetName: data.targetName ?? undefined,
+        targetNameLower: data.targetNameLower ?? undefined,
         targetType: data.targetType ?? "student",
         groupName: data.groupName ?? undefined,
         targetGender: data.targetGender ?? undefined,

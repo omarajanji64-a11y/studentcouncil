@@ -37,12 +37,18 @@ export function ComplaintsTable({
   loading,
   staffView,
   onRefresh,
+  searchValue,
+  onSearchChange,
+  serverSide = false,
 }: {
   data: Complaint[];
   duties: Duty[];
   loading?: boolean;
   staffView?: boolean;
   onRefresh?: () => void;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  serverSide?: boolean;
 }) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -61,43 +67,57 @@ export function ComplaintsTable({
     return map;
   }, [duties]);
 
+  const effectiveFilter = searchValue ?? filter;
+  const showAdvancedFilters = !serverSide;
+
   const filtered = useMemo(() => {
-    let filteredData = [...data].sort((a, b) => b.timestamp - a.timestamp);
-    if (filter) {
+    let filteredData = serverSide
+      ? [...data]
+      : [...data].sort((a, b) => b.timestamp - a.timestamp);
+    if (!serverSide && effectiveFilter) {
       const includesStudentInfo = isSupervisor(user);
       filteredData = filteredData.filter((complaint) =>
         [
           includesStudentInfo ? complaint.studentId : "",
           includesStudentInfo ? complaint.studentName ?? "" : "",
           complaint.groupName ?? "",
-          complaint.title,
+          complaint.targetName ?? complaint.title,
           complaint.description,
         ]
           .join(" ")
           .toLowerCase()
-          .includes(filter.toLowerCase())
+          .includes(effectiveFilter.toLowerCase())
       );
     }
-    if (statusFilter.length) {
+    if (!serverSide && statusFilter.length) {
       filteredData = filteredData.filter((complaint) =>
         statusFilter.includes(complaint.status)
       );
     }
-    if (dutyFilter.length) {
+    if (!serverSide && dutyFilter.length) {
       filteredData = filteredData.filter((complaint) =>
         complaint.dutyId ? dutyFilter.includes(complaint.dutyId) : false
       );
     }
-    if (startDate) {
+    if (!serverSide && startDate) {
       const start = new Date(startDate).getTime();
       filteredData = filteredData.filter((complaint) => complaint.timestamp >= start);
     }
-    if (endDate) {
+    if (!serverSide && endDate) {
       const end = new Date(endDate).getTime();
       filteredData = filteredData.filter((complaint) => complaint.timestamp <= end);
     }
     return filteredData;
-  }, [data, filter, statusFilter, dutyFilter, startDate, endDate]);
+  }, [
+    data,
+    effectiveFilter,
+    statusFilter,
+    dutyFilter,
+    startDate,
+    endDate,
+    serverSide,
+    user,
+  ]);
 
   const openEditor = (complaint: Complaint) => {
     setActiveComplaint(complaint);
@@ -140,81 +160,83 @@ export function ComplaintsTable({
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Input
-          placeholder="Search by student or name..."
-          value={filter}
-          onChange={(event) => setFilter(event.target.value)}
+          placeholder="Search student name..."
+          value={effectiveFilter}
+          onChange={(event) => (onSearchChange ?? setFilter)(event.target.value)}
           className="w-full sm:max-w-sm"
         />
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2">
-            <Label className="text-xs text-muted-foreground">From</Label>
-            <Input
-              type="date"
-              className="h-9"
-              value={startDate}
-              onChange={(event) => setStartDate(event.target.value)}
-            />
+        {showAdvancedFilters ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground">From</Label>
+              <Input
+                type="date"
+                className="h-9"
+                value={startDate}
+                onChange={(event) => setStartDate(event.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground">To</Label>
+              <Input
+                type="date"
+                className="h-9"
+                value={endDate}
+                onChange={(event) => setEndDate(event.target.value)}
+              />
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Status <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {statusOptions.map((status) => (
+                  <DropdownMenuCheckboxItem
+                    key={status}
+                    checked={statusFilter.includes(status)}
+                    onCheckedChange={(checked) => {
+                      setStatusFilter((current) =>
+                        checked ? [...current, status] : current.filter((s) => s !== status)
+                      );
+                    }}
+                  >
+                    {status}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Duty <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {duties.map((duty) => (
+                  <DropdownMenuCheckboxItem
+                    key={duty.id}
+                    checked={dutyFilter.includes(duty.id)}
+                    onCheckedChange={(checked) => {
+                      setDutyFilter((current) =>
+                        checked ? [...current, duty.id] : current.filter((d) => d !== duty.id)
+                      );
+                    }}
+                  >
+                    {duty.title}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button size="sm" variant="outline" className="h-9 gap-1">
+              <File className="h-3.5 w-3.5" />
+              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                Export
+              </span>
+            </Button>
           </div>
-          <div className="flex items-center gap-2">
-            <Label className="text-xs text-muted-foreground">To</Label>
-            <Input
-              type="date"
-              className="h-9"
-              value={endDate}
-              onChange={(event) => setEndDate(event.target.value)}
-            />
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Status <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {statusOptions.map((status) => (
-                <DropdownMenuCheckboxItem
-                  key={status}
-                  checked={statusFilter.includes(status)}
-                  onCheckedChange={(checked) => {
-                    setStatusFilter((current) =>
-                      checked ? [...current, status] : current.filter((s) => s !== status)
-                    );
-                  }}
-                >
-                  {status}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Duty <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {duties.map((duty) => (
-                <DropdownMenuCheckboxItem
-                  key={duty.id}
-                  checked={dutyFilter.includes(duty.id)}
-                  onCheckedChange={(checked) => {
-                    setDutyFilter((current) =>
-                      checked ? [...current, duty.id] : current.filter((d) => d !== duty.id)
-                    );
-                  }}
-                >
-                  {duty.title}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button size="sm" variant="outline" className="h-9 gap-1">
-            <File className="h-3.5 w-3.5" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-              Export
-            </span>
-          </Button>
-        </div>
+        ) : null}
       </div>
       <div className="grid gap-3 md:hidden">
         {loading ? (
@@ -231,12 +253,13 @@ export function ComplaintsTable({
                 : isSupervisor(user)
                 ? complaint.studentName ?? complaint.studentId
                 : "Hidden";
+            const targetLabel = complaint.targetName ?? complaint.title;
             return (
               <Card key={complaint.id}>
                 <CardContent className="pt-5 space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="text-base font-semibold">{complaint.title}</div>
+                      <div className="text-base font-semibold">{targetLabel}</div>
                       <div className="text-sm text-muted-foreground">{nameLabel}</div>
                     </div>
                     <Badge variant="secondary">{complaint.status}</Badge>
@@ -319,7 +342,7 @@ export function ComplaintsTable({
                       ? complaint.studentName ?? complaint.studentId
                       : "Hidden"}
                   </TableCell>
-                  <TableCell>{complaint.title}</TableCell>
+                  <TableCell>{complaint.targetName ?? complaint.title}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {complaint.dutyId ? dutyLabel.get(complaint.dutyId) ?? "Unknown" : "N/A"}
                   </TableCell>
