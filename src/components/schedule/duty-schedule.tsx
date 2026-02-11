@@ -18,6 +18,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MotionModal } from "@/components/motion/motion-modal";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { createDuty, deleteDuty, updateDuty, useDuties, useUsers } from "@/hooks/use-firestore";
@@ -28,6 +35,15 @@ type EditorState = {
   open: boolean;
   duty: Duty | null;
 };
+
+const dutyLocations = [
+  "Girls elevator",
+  "Girls boys stairs",
+  "Girls girls stairs",
+  "YKS elevator",
+  "YKS girls",
+  "Canteen",
+];
 
 export function DutyScheduleEditor() {
   const { user } = useAuth();
@@ -127,11 +143,11 @@ export function DutyScheduleEditor() {
 
   const handleSave = async () => {
     if (!staff || !user) return;
-    if (!title || !startTime || !endTime) {
+    if (!title || !startTime || !endTime || !location.trim()) {
       toast({
         variant: "destructive",
         title: "Missing fields",
-        description: "Title, start time, and end time are required.",
+        description: "Title, location, start time, and end time are required.",
       });
       return;
     }
@@ -148,8 +164,8 @@ export function DutyScheduleEditor() {
         endTime: end,
         memberIds,
         memberNames,
+        location: locationValue,
       };
-      if (locationValue) update.location = locationValue;
       await updateDuty(
         editor.duty.id,
         update,
@@ -164,7 +180,7 @@ export function DutyScheduleEditor() {
         endTime: end,
         memberIds,
         memberNames,
-        ...(locationValue ? { location: locationValue } : {}),
+        location: locationValue,
       };
       await createDuty(
         createPayload,
@@ -321,13 +337,22 @@ export function DutyScheduleEditor() {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="duty-location">Location (optional)</Label>
-            <Input
-              id="duty-location"
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
-              placeholder="e.g., 4th floor boys staircase"
-            />
+            <Label htmlFor="duty-location">Location</Label>
+            <Select value={location} onValueChange={setLocation}>
+              <SelectTrigger id="duty-location">
+                <SelectValue placeholder="Select location" />
+              </SelectTrigger>
+              <SelectContent>
+                {dutyLocations.map((loc) => (
+                  <SelectItem key={loc} value={loc}>
+                    {loc}
+                  </SelectItem>
+                ))}
+                {location && !dutyLocations.includes(location) ? (
+                  <SelectItem value={location}>{location}</SelectItem>
+                ) : null}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="duty-start">Start</Label>
