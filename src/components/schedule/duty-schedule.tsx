@@ -178,7 +178,7 @@ export function DutyScheduleEditor() {
 
   const timeSlots = useMemo<TimeSlot[]>(() => {
     const slotMap = new Map<string, TimeSlot>();
-    allViewDuties.forEach((duty) => {
+    duties.forEach((duty) => {
       const key = toTimeKey(duty.startTime, duty.endTime);
       if (!slotMap.has(key)) {
         slotMap.set(key, {
@@ -189,7 +189,7 @@ export function DutyScheduleEditor() {
       }
     });
     return Array.from(slotMap.values()).sort((a, b) => a.startTime - b.startTime);
-  }, [allViewDuties]);
+  }, [duties]);
 
   const locationRows = useMemo<LocationRow[]>(() => {
     return activeLocations.map((location) => ({
