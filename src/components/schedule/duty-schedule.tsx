@@ -18,6 +18,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MotionModal } from "@/components/motion/motion-modal";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { createDuty, deleteDuty, updateDuty, useDuties, useUsers } from "@/hooks/use-firestore";
@@ -48,12 +55,6 @@ type SlotEditorState = {
   end: string;
 };
 
-type LocationEditorState = {
-  open: boolean;
-  location: LocationRow | null;
-  next: string;
-};
-
 type AssignmentEditorState = {
   open: boolean;
   duty: Duty | null;
@@ -62,7 +63,16 @@ type AssignmentEditorState = {
   memberIds: string[];
 };
 
-const normalizeLocation = (value?: string) => (value ?? "").trim();
+const dutyLocations = [
+  "Girls elevator",
+  "Girls boys stairs",
+  "Girls girls stairs",
+  "YKS elevator",
+  "YKS girls",
+  "Canteen",
+];
+
+const normalizeLocation = (value?: string) => (value ?? "").trim().toLowerCase();
 
 const toTimeKey = (start: number, end: number) => {
   return `${format(new Date(start), "HH:mm")}-${format(new Date(end), "HH:mm")}`;
@@ -97,11 +107,6 @@ export function DutyScheduleEditor() {
     slot: null,
     start: "",
     end: "",
-  });
-  const [locationEditor, setLocationEditor] = useState<LocationEditorState>({
-    open: false,
-    location: null,
-    next: "",
   });
   const [assignmentEditor, setAssignmentEditor] = useState<AssignmentEditorState>({
     open: false,
@@ -182,26 +187,17 @@ export function DutyScheduleEditor() {
   }, [allViewDuties]);
 
   const locationRows = useMemo<LocationRow[]>(() => {
-    const locationMap = new Map<string, LocationRow>();
-    allViewDuties.forEach((duty) => {
-      const value = normalizeLocation(duty.location);
-      const key = value || "__unspecified__";
-      if (!locationMap.has(key)) {
-        locationMap.set(key, {
-          key,
-          value,
-          label: value || "Unspecified",
-        });
-      }
-    });
-    return Array.from(locationMap.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [allViewDuties]);
+    return dutyLocations.map((location) => ({
+      key: normalizeLocation(location),
+      value: location,
+      label: location,
+    }));
+  }, []);
 
   const dutyGrid = useMemo(() => {
     const map = new Map<string, Duty>();
     allViewDuties.forEach((duty) => {
-      const locationValue = normalizeLocation(duty.location);
-      const locationKey = locationValue || "__unspecified__";
+      const locationKey = normalizeLocation(duty.location);
       const slotKey = toTimeKey(duty.startTime, duty.endTime);
       map.set(`${locationKey}||${slotKey}`, duty);
     });
@@ -296,7 +292,7 @@ export function DutyScheduleEditor() {
   };
 
   const handleSaveSlot = async () => {
-    if (!staff || !user || !slotEditor.slot) return;
+    if (!staff || !user) return;
     if (!slotEditor.start || !slotEditor.end) {
       toast({
         variant: "destructive",
@@ -305,61 +301,41 @@ export function DutyScheduleEditor() {
       });
       return;
     }
-    const affected = allViewDuties.filter(
-      (duty) => toTimeKey(duty.startTime, duty.endTime) === slotEditor.slot?.key
-    );
-    await Promise.all(
-      affected.map((duty) =>
-        updateDuty(
-          duty.id,
-          {
-            startTime: applyTime(duty.startTime, slotEditor.start),
-            endTime: applyTime(duty.endTime, slotEditor.end),
-          },
-          user.uid
+    if (!slotEditor.slot) {
+      const start = applyTime(Date.now(), slotEditor.start);
+      const end = applyTime(Date.now(), slotEditor.end);
+      const baseLocation = dutyLocations[0];
+      await createDuty(
+        {
+          title: baseLocation,
+          startTime: start,
+          endTime: end,
+          memberIds: [],
+          memberNames: [],
+          location: baseLocation,
+        },
+        user.uid
+      );
+    } else {
+      const affected = allViewDuties.filter(
+        (duty) => toTimeKey(duty.startTime, duty.endTime) === slotEditor.slot?.key
+      );
+      await Promise.all(
+        affected.map((duty) =>
+          updateDuty(
+            duty.id,
+            {
+              startTime: applyTime(duty.startTime, slotEditor.start),
+              endTime: applyTime(duty.endTime, slotEditor.end),
+            },
+            user.uid
+          )
         )
-      )
-    );
+      );
+    }
     refresh?.();
     setSlotEditor({ open: false, slot: null, start: "", end: "" });
     toast({ title: "Time updated", description: "Duty times updated for this column." });
-  };
-
-  const openLocationEditor = (locationRow: LocationRow) => {
-    if (!staff) return;
-    setLocationEditor({
-      open: true,
-      location: locationRow,
-      next: locationRow.value,
-    });
-  };
-
-  const handleSaveLocation = async () => {
-    if (!staff || !user || !locationEditor.location) return;
-    const nextValue = locationEditor.next.trim();
-    if (!nextValue) {
-      toast({
-        variant: "destructive",
-        title: "Missing location",
-        description: "Location name is required.",
-      });
-      return;
-    }
-    const affected = allViewDuties.filter(
-      (duty) => normalizeLocation(duty.location) === locationEditor.location?.value
-    );
-    await Promise.all(
-      affected.map((duty) =>
-        updateDuty(
-          duty.id,
-          { location: nextValue, title: nextValue },
-          user.uid
-        )
-      )
-    );
-    refresh?.();
-    setLocationEditor({ open: false, location: null, next: "" });
-    toast({ title: "Location updated", description: "Row location updated." });
   };
 
   const openAssignmentEditor = (
@@ -419,6 +395,11 @@ export function DutyScheduleEditor() {
     toast({ title: "Assignment saved", description: "Duty assignment updated." });
   };
 
+  const openNewSlotEditor = () => {
+    if (!staff) return;
+    setSlotEditor({ open: true, slot: null, start: "", end: "" });
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -430,7 +411,13 @@ export function DutyScheduleEditor() {
           <CardDescription>Daily duty schedule (time only).</CardDescription>
         </div>
         <div className="flex items-center gap-2">
-          {staff ? (
+          {staff && scope === "all" ? (
+            <Button size="sm" className="gap-1" onClick={openNewSlotEditor}>
+              <PlusCircle className="h-4 w-4" />
+              Add Time Slot
+            </Button>
+          ) : null}
+          {staff && scope === "personal" ? (
             <Button size="sm" className="gap-1" onClick={() => openEditor()}>
               <PlusCircle className="h-4 w-4" />
               New Duty
@@ -500,22 +487,7 @@ export function DutyScheduleEditor() {
                 ) : timeSlots.length && locationRows.length ? (
                   locationRows.map((row) => (
                     <TableRow key={row.key}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <span>{row.label}</span>
-                          {staff ? (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-7 w-7"
-                              onClick={() => openLocationEditor(row)}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                              <span className="sr-only">Edit location</span>
-                            </Button>
-                          ) : null}
-                        </div>
-                      </TableCell>
+                      <TableCell className="font-medium">{row.label}</TableCell>
                       {timeSlots.map((slot) => {
                         const key = `${row.key}||${slot.key}`;
                         const duty = dutyGrid.get(key);
@@ -640,12 +612,18 @@ export function DutyScheduleEditor() {
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="duty-location">Location</Label>
-            <Input
-              id="duty-location"
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
-              placeholder="Location name"
-            />
+            <Select value={location} onValueChange={setLocation}>
+              <SelectTrigger id="duty-location">
+                <SelectValue placeholder="Select location" />
+              </SelectTrigger>
+              <SelectContent>
+                {dutyLocations.map((loc) => (
+                  <SelectItem key={loc} value={loc}>
+                    {loc}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="duty-start">Start</Label>
@@ -689,8 +667,8 @@ export function DutyScheduleEditor() {
       <MotionModal
         open={slotEditor.open}
         onOpenChange={(open) => setSlotEditor((prev) => ({ ...prev, open }))}
-        title="Edit Duty Time"
-        description="Update the time range for this column."
+        title={slotEditor.slot ? "Edit Duty Time" : "Add Time Slot"}
+        description="Set the time range for this duty column."
         contentClassName="sm:max-w-[420px]"
         footer={<Button onClick={handleSaveSlot}>Save Time</Button>}
       >
@@ -714,28 +692,6 @@ export function DutyScheduleEditor() {
               value={slotEditor.end}
               onChange={(event) =>
                 setSlotEditor((prev) => ({ ...prev, end: event.target.value }))
-              }
-            />
-          </div>
-        </div>
-      </MotionModal>
-
-      <MotionModal
-        open={locationEditor.open}
-        onOpenChange={(open) => setLocationEditor((prev) => ({ ...prev, open }))}
-        title="Edit Duty Place"
-        description="Update the location name for this row."
-        contentClassName="sm:max-w-[420px]"
-        footer={<Button onClick={handleSaveLocation}>Save Location</Button>}
-      >
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="location-edit">Location</Label>
-            <Input
-              id="location-edit"
-              value={locationEditor.next}
-              onChange={(event) =>
-                setLocationEditor((prev) => ({ ...prev, next: event.target.value }))
               }
             />
           </div>
