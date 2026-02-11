@@ -65,6 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      setLoading(true);
       const ref = docRefs.user(fbUser.uid);
       if (!ref) {
         setUser(null);
