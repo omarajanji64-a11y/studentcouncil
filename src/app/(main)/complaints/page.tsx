@@ -37,7 +37,10 @@ export default function ComplaintsPage() {
     >
   >({});
   const [loading, setLoading] = useState(false);
+  const [memberLoading, setMemberLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [memberComplaints, setMemberComplaints] = useState<Complaint[]>([]);
+  const [memberRefresh, setMemberRefresh] = useState(0);
   const pageSize = 10;
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -63,6 +66,7 @@ export default function ComplaintsPage() {
 
   useEffect(() => {
     if (!user) return;
+    if (!staffView) return;
     if (currentPage) return;
     const col = collections.complaints();
     if (!col) {
@@ -128,10 +132,61 @@ export default function ComplaintsPage() {
     };
   }, [user, staffView, normalizedSearch, pageIndex, currentPage, pageInfo]);
 
+  useEffect(() => {
+    if (!user) return;
+    if (staffView) return;
+    const col = collections.complaints();
+    if (!col) {
+      setError("Firestore not configured.");
+      return;
+    }
+    let active = true;
+    setMemberLoading(true);
+    setError(null);
+    getDocs(query(col, where("studentId", "==", user.uid)))
+      .then((snapshot) => {
+        if (!active) return;
+        const docs = snapshot.docs.map((doc) =>
+          converters.complaint.fromFirestore(doc)
+        );
+        setMemberComplaints(docs);
+        setMemberLoading(false);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : "Failed to load complaints.");
+        setMemberLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user, staffView, memberRefresh]);
+
   if (!user) return null;
 
-  const complaints = currentPage ?? [];
-  const hasNext = currentInfo?.hasNext ?? false;
+  const memberFiltered = useMemo(() => {
+    let list = [...memberComplaints].sort((a, b) => b.timestamp - a.timestamp);
+    if (normalizedSearch) {
+      list = list.filter((complaint) =>
+        (complaint.targetName ?? complaint.title ?? "")
+          .toLowerCase()
+          .includes(normalizedSearch)
+      );
+    }
+    return list;
+  }, [memberComplaints, normalizedSearch]);
+
+  const memberTotalPages = Math.max(1, Math.ceil(memberFiltered.length / pageSize));
+  const memberPage = memberFiltered.slice(
+    pageIndex * pageSize,
+    pageIndex * pageSize + pageSize
+  );
+
+  const complaints = staffView ? currentPage ?? [] : memberPage;
+  const hasNext = staffView
+    ? currentInfo?.hasNext ?? false
+    : pageIndex + 1 < memberTotalPages;
+  const isLoading = staffView ? loading : memberLoading;
 
   return (
     <div className="space-y-6">
@@ -148,16 +203,19 @@ export default function ComplaintsPage() {
           <Button
             size="sm"
             variant="outline"
-            disabled={pageIndex === 0 || loading}
+            disabled={pageIndex === 0 || isLoading}
             onClick={() => setPageIndex((prev) => Math.max(0, prev - 1))}
           >
             Prev
           </Button>
-          <div className="text-xs text-muted-foreground">Page {pageIndex + 1}</div>
+          <div className="text-xs text-muted-foreground">
+            Page {pageIndex + 1}
+            {!staffView ? ` of ${memberTotalPages}` : ""}
+          </div>
           <Button
             size="sm"
             variant="outline"
-            disabled={!hasNext || loading}
+            disabled={!hasNext || isLoading}
             onClick={() => setPageIndex((prev) => prev + 1)}
           >
             Next
@@ -174,16 +232,19 @@ export default function ComplaintsPage() {
           <ComplaintsTable
             data={complaints}
             duties={duties}
-            loading={loading}
+            loading={isLoading}
             staffView={staffView}
             onRefresh={() => {
               setPages({});
               setPageInfo({});
               setPageIndex(0);
+              if (!staffView) {
+                setMemberRefresh((prev) => prev + 1);
+              }
             }}
             searchValue={searchInput}
             onSearchChange={(value) => setSearchInput(value)}
-            serverSide
+            serverSide={staffView}
           />
         </CardContent>
       </Card>
