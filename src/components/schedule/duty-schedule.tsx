@@ -232,6 +232,7 @@ export function DutyScheduleEditor() {
             <TableHeader>
               <TableRow>
                 <TableHead>Time</TableHead>
+                <TableHead>Location</TableHead>
                 <TableHead>Duty</TableHead>
                 <TableHead>Members</TableHead>
                 {staff ? <TableHead className="text-right">Actions</TableHead> : null}
@@ -240,7 +241,7 @@ export function DutyScheduleEditor() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={staff ? 4 : 3} className="h-20 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={staff ? 5 : 4} className="h-20 text-center text-sm text-muted-foreground">
                     Loading duties...
                   </TableCell>
                 </TableRow>
@@ -251,10 +252,10 @@ export function DutyScheduleEditor() {
                       {format(new Date(duty.startTime), "p")} - {format(new Date(duty.endTime), "p")}
                     </TableCell>
                     <TableCell>
-                      <div className="font-medium">{duty.location ?? duty.title}</div>
-                      {duty.location && duty.title && duty.location !== duty.title ? (
-                        <div className="text-xs text-muted-foreground">{duty.title}</div>
-                      ) : null}
+                      <div className="font-medium">{duty.location ?? "Unspecified"}</div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {duty.title ?? "—"}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {duty.memberNames?.length ? duty.memberNames.join(", ") : "Unassigned"}
@@ -287,7 +288,7 @@ export function DutyScheduleEditor() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={staff ? 4 : 3} className="h-20 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={staff ? 5 : 4} className="h-20 text-center text-sm text-muted-foreground">
                     No duties scheduled for today.
                   </TableCell>
                 </TableRow>
