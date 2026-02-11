@@ -144,6 +144,100 @@ export default function BreaksPage() {
     });
   };
 
+  const renderBreaksTable = (showActions: boolean) => {
+    const colSpan = showActions ? 5 : 4;
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Start Time</TableHead>
+            <TableHead>End Time</TableHead>
+            <TableHead>Status</TableHead>
+            {showActions ? (
+              <TableHead>
+                <span className="sr-only">Actions</span>
+              </TableHead>
+            ) : null}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {loading ? (
+            <TableRow>
+              <TableCell colSpan={colSpan} className="h-24 text-center">
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-2/3 mx-auto" />
+                  <Skeleton className="h-4 w-1/2 mx-auto" />
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : sortedBreaks.length ? (
+            sortedBreaks.map((breakItem) => (
+              <TableRow key={breakItem.id}>
+                <TableCell className="font-medium">{breakItem.name}</TableCell>
+                <TableCell>{format(new Date(breakItem.startTime), "p")}</TableCell>
+                <TableCell>{format(new Date(breakItem.endTime), "p")}</TableCell>
+                <TableCell>
+                  <motion.div
+                    animate={{
+                      backgroundColor: isBreakActive(breakItem)
+                        ? "rgba(34, 197, 94, 0.15)"
+                        : "rgba(148, 163, 184, 0.18)",
+                      color: isBreakActive(breakItem)
+                        ? "rgb(21, 128, 61)"
+                        : "rgb(100, 116, 139)",
+                      scale: isBreakActive(breakItem) ? [1, 1.04, 1] : 1,
+                    }}
+                    transition={{ duration: durations.base, ease: easing }}
+                    className="inline-flex rounded-full"
+                  >
+                    <Badge
+                      variant="outline"
+                      className="border-transparent bg-transparent px-2.5 py-0.5 text-xs font-semibold"
+                    >
+                      {isBreakActive(breakItem) ? "Active" : "Inactive"}
+                    </Badge>
+                  </motion.div>
+                </TableCell>
+                {showActions ? (
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        aria-haspopup="true"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => openEdit(breakItem)}
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Edit break</span>
+                      </Button>
+                      <Button
+                        aria-haspopup="true"
+                        size="icon"
+                        variant="ghost"
+                        className="text-destructive"
+                        onClick={() => handleDeleteBreak(breakItem.id)}
+                      >
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Delete break</span>
+                      </Button>
+                    </div>
+                  </TableCell>
+                ) : null}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={colSpan} className="h-24 text-center">
+                No breaks scheduled.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    );
+  };
+
   return (
     <div>
       <PageHeader
@@ -218,92 +312,7 @@ export default function BreaksPage() {
                 Passes can only be issued during these scheduled times.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Start Time</TableHead>
-                    <TableHead>End Time</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>
-                      <span className="sr-only">Actions</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center">
-                        <div className="space-y-3">
-                          <Skeleton className="h-4 w-2/3 mx-auto" />
-                          <Skeleton className="h-4 w-1/2 mx-auto" />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : sortedBreaks.length ? (
-                    sortedBreaks.map((breakItem) => (
-                      <TableRow key={breakItem.id}>
-                        <TableCell className="font-medium">{breakItem.name}</TableCell>
-                        <TableCell>{format(new Date(breakItem.startTime), "p")}</TableCell>
-                        <TableCell>{format(new Date(breakItem.endTime), "p")}</TableCell>
-                        <TableCell>
-                          <motion.div
-                            animate={{
-                              backgroundColor: isBreakActive(breakItem)
-                                ? "rgba(34, 197, 94, 0.15)"
-                                : "rgba(148, 163, 184, 0.18)",
-                              color: isBreakActive(breakItem)
-                                ? "rgb(21, 128, 61)"
-                                : "rgb(100, 116, 139)",
-                              scale: isBreakActive(breakItem) ? [1, 1.04, 1] : 1,
-                            }}
-                            transition={{ duration: durations.base, ease: easing }}
-                            className="inline-flex rounded-full"
-                          >
-                            <Badge
-                              variant="outline"
-                              className="border-transparent bg-transparent px-2.5 py-0.5 text-xs font-semibold"
-                            >
-                              {isBreakActive(breakItem) ? "Active" : "Inactive"}
-                            </Badge>
-                          </motion.div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              aria-haspopup="true"
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => openEdit(breakItem)}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Edit break</span>
-                            </Button>
-                            <Button
-                              aria-haspopup="true"
-                              size="icon"
-                              variant="ghost"
-                              className="text-destructive"
-                              onClick={() => handleDeleteBreak(breakItem.id)}
-                            >
-                              <X className="h-4 w-4" />
-                              <span className="sr-only">Delete break</span>
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center">
-                        No breaks scheduled.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
+            <CardContent>{renderBreaksTable(true)}</CardContent>
           </Card>
 
           <MotionModal
@@ -347,9 +356,14 @@ export default function BreaksPage() {
         </>
       ) : (
         <Card>
-          <CardContent className="pt-6 text-sm text-muted-foreground">
-            Break management is available to supervisors and admins.
-          </CardContent>
+          <CardHeader>
+            <CardTitle>Scheduled Breaks</CardTitle>
+            <CardDescription>
+              View-only schedule for members. Passes can only be issued during
+              these scheduled times.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>{renderBreaksTable(false)}</CardContent>
         </Card>
       )}
     </div>

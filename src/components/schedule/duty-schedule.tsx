@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarDays, PlusCircle, Users, X } from "lucide-react";
+import { CalendarDays, Pencil, PlusCircle, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,13 +18,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MotionModal } from "@/components/motion/motion-modal";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { createDuty, deleteDuty, updateDuty, useDuties, useUsers } from "@/hooks/use-firestore";
@@ -36,14 +29,55 @@ type EditorState = {
   duty: Duty | null;
 };
 
-const dutyLocations = [
-  "Girls elevator",
-  "Girls boys stairs",
-  "Girls girls stairs",
-  "YKS elevator",
-  "YKS girls",
-  "Canteen",
-];
+type TimeSlot = {
+  key: string;
+  startTime: number;
+  endTime: number;
+};
+
+type LocationRow = {
+  key: string;
+  value: string;
+  label: string;
+};
+
+type SlotEditorState = {
+  open: boolean;
+  slot: TimeSlot | null;
+  start: string;
+  end: string;
+};
+
+type LocationEditorState = {
+  open: boolean;
+  location: LocationRow | null;
+  next: string;
+};
+
+type AssignmentEditorState = {
+  open: boolean;
+  duty: Duty | null;
+  slot: TimeSlot | null;
+  location: LocationRow | null;
+  memberIds: string[];
+};
+
+const normalizeLocation = (value?: string) => (value ?? "").trim();
+
+const toTimeKey = (start: number, end: number) => {
+  return `${format(new Date(start), "HH:mm")}-${format(new Date(end), "HH:mm")}`;
+};
+
+const toTimeLabel = (start: number, end: number) => {
+  return `${format(new Date(start), "p")} - ${format(new Date(end), "p")}`;
+};
+
+const applyTime = (baseTimestamp: number, timeValue: string) => {
+  const [hours, minutes] = timeValue.split(":").map(Number);
+  const date = new Date(baseTimestamp);
+  date.setHours(hours, minutes, 0, 0);
+  return date.getTime();
+};
 
 export function DutyScheduleEditor() {
   const { user } = useAuth();
@@ -58,6 +92,24 @@ export function DutyScheduleEditor() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [memberIds, setMemberIds] = useState<string[]>([]);
+  const [slotEditor, setSlotEditor] = useState<SlotEditorState>({
+    open: false,
+    slot: null,
+    start: "",
+    end: "",
+  });
+  const [locationEditor, setLocationEditor] = useState<LocationEditorState>({
+    open: false,
+    location: null,
+    next: "",
+  });
+  const [assignmentEditor, setAssignmentEditor] = useState<AssignmentEditorState>({
+    open: false,
+    duty: null,
+    slot: null,
+    location: null,
+    memberIds: [],
+  });
 
   const memberOptions = useMemo(
     () => users.map((member) => ({ id: member.uid, name: member.name })),
@@ -110,12 +162,58 @@ export function DutyScheduleEditor() {
       .sort((a, b) => a.startTime - b.startTime);
   }, [scopedDuties]);
 
+  const allViewDuties = useMemo(() => {
+    return [...genderFilteredDuties].sort((a, b) => a.startTime - b.startTime);
+  }, [genderFilteredDuties]);
+
+  const timeSlots = useMemo<TimeSlot[]>(() => {
+    const slotMap = new Map<string, TimeSlot>();
+    allViewDuties.forEach((duty) => {
+      const key = toTimeKey(duty.startTime, duty.endTime);
+      if (!slotMap.has(key)) {
+        slotMap.set(key, {
+          key,
+          startTime: duty.startTime,
+          endTime: duty.endTime,
+        });
+      }
+    });
+    return Array.from(slotMap.values()).sort((a, b) => a.startTime - b.startTime);
+  }, [allViewDuties]);
+
+  const locationRows = useMemo<LocationRow[]>(() => {
+    const locationMap = new Map<string, LocationRow>();
+    allViewDuties.forEach((duty) => {
+      const value = normalizeLocation(duty.location);
+      const key = value || "__unspecified__";
+      if (!locationMap.has(key)) {
+        locationMap.set(key, {
+          key,
+          value,
+          label: value || "Unspecified",
+        });
+      }
+    });
+    return Array.from(locationMap.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [allViewDuties]);
+
+  const dutyGrid = useMemo(() => {
+    const map = new Map<string, Duty>();
+    allViewDuties.forEach((duty) => {
+      const locationValue = normalizeLocation(duty.location);
+      const locationKey = locationValue || "__unspecified__";
+      const slotKey = toTimeKey(duty.startTime, duty.endTime);
+      map.set(`${locationKey}||${slotKey}`, duty);
+    });
+    return map;
+  }, [allViewDuties]);
+
   const openEditor = (duty?: Duty) => {
     if (!staff) return;
     if (duty) {
       setLocation(duty.location ?? "");
-      setStartTime(format(new Date(duty.startTime), "yyyy-MM-dd'T'HH:mm"));
-      setEndTime(format(new Date(duty.endTime), "yyyy-MM-dd'T'HH:mm"));
+      setStartTime(format(new Date(duty.startTime), "HH:mm"));
+      setEndTime(format(new Date(duty.endTime), "HH:mm"));
       setMemberIds(duty.memberIds);
     } else {
       setLocation("");
@@ -136,8 +234,10 @@ export function DutyScheduleEditor() {
       });
       return;
     }
-    const start = new Date(startTime).getTime();
-    const end = new Date(endTime).getTime();
+    const baseStart = editor.duty?.startTime ?? Date.now();
+    const baseEnd = editor.duty?.endTime ?? Date.now();
+    const start = applyTime(baseStart, startTime);
+    const end = applyTime(baseEnd, endTime);
     const memberNames = memberOptions
       .filter((option) => memberIds.includes(option.id))
       .map((option) => option.name);
@@ -185,6 +285,140 @@ export function DutyScheduleEditor() {
     toast({ title: "Duty deleted", description: "Duty has been removed." });
   };
 
+  const openSlotEditor = (slot: TimeSlot) => {
+    if (!staff) return;
+    setSlotEditor({
+      open: true,
+      slot,
+      start: format(new Date(slot.startTime), "HH:mm"),
+      end: format(new Date(slot.endTime), "HH:mm"),
+    });
+  };
+
+  const handleSaveSlot = async () => {
+    if (!staff || !user || !slotEditor.slot) return;
+    if (!slotEditor.start || !slotEditor.end) {
+      toast({
+        variant: "destructive",
+        title: "Missing times",
+        description: "Start and end times are required.",
+      });
+      return;
+    }
+    const affected = allViewDuties.filter(
+      (duty) => toTimeKey(duty.startTime, duty.endTime) === slotEditor.slot?.key
+    );
+    await Promise.all(
+      affected.map((duty) =>
+        updateDuty(
+          duty.id,
+          {
+            startTime: applyTime(duty.startTime, slotEditor.start),
+            endTime: applyTime(duty.endTime, slotEditor.end),
+          },
+          user.uid
+        )
+      )
+    );
+    refresh?.();
+    setSlotEditor({ open: false, slot: null, start: "", end: "" });
+    toast({ title: "Time updated", description: "Duty times updated for this column." });
+  };
+
+  const openLocationEditor = (locationRow: LocationRow) => {
+    if (!staff) return;
+    setLocationEditor({
+      open: true,
+      location: locationRow,
+      next: locationRow.value,
+    });
+  };
+
+  const handleSaveLocation = async () => {
+    if (!staff || !user || !locationEditor.location) return;
+    const nextValue = locationEditor.next.trim();
+    if (!nextValue) {
+      toast({
+        variant: "destructive",
+        title: "Missing location",
+        description: "Location name is required.",
+      });
+      return;
+    }
+    const affected = allViewDuties.filter(
+      (duty) => normalizeLocation(duty.location) === locationEditor.location?.value
+    );
+    await Promise.all(
+      affected.map((duty) =>
+        updateDuty(
+          duty.id,
+          { location: nextValue, title: nextValue },
+          user.uid
+        )
+      )
+    );
+    refresh?.();
+    setLocationEditor({ open: false, location: null, next: "" });
+    toast({ title: "Location updated", description: "Row location updated." });
+  };
+
+  const openAssignmentEditor = (
+    locationRow: LocationRow,
+    slot: TimeSlot,
+    duty?: Duty
+  ) => {
+    if (!staff) return;
+    setAssignmentEditor({
+      open: true,
+      duty: duty ?? null,
+      slot,
+      location: locationRow,
+      memberIds: duty?.memberIds ?? [],
+    });
+  };
+
+  const handleSaveAssignment = async () => {
+    if (!staff || !user || !assignmentEditor.slot || !assignmentEditor.location) return;
+    const memberNames = memberOptions
+      .filter((option) => assignmentEditor.memberIds.includes(option.id))
+      .map((option) => option.name);
+    const locationValue = assignmentEditor.location.value;
+    const titleValue = locationValue || assignmentEditor.location.label;
+    if (assignmentEditor.duty) {
+      await updateDuty(
+        assignmentEditor.duty.id,
+        {
+          memberIds: assignmentEditor.memberIds,
+          memberNames,
+          location: locationValue,
+          title: titleValue,
+        },
+        user.uid
+      );
+    } else {
+      await createDuty(
+        {
+          title: titleValue,
+          startTime: assignmentEditor.slot.startTime,
+          endTime: assignmentEditor.slot.endTime,
+          memberIds: assignmentEditor.memberIds,
+          memberNames,
+          location: locationValue,
+        },
+        user.uid
+      );
+    }
+    refresh?.();
+    setAssignmentEditor({
+      open: false,
+      duty: null,
+      slot: null,
+      location: null,
+      memberIds: [],
+    });
+    toast({ title: "Assignment saved", description: "Duty assignment updated." });
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -225,74 +459,169 @@ export function DutyScheduleEditor() {
             </Tabs>
           ) : null}
         </div>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Time</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Duty</TableHead>
-                <TableHead>Members</TableHead>
-                {staff ? <TableHead className="text-right">Actions</TableHead> : null}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
+        <div className="rounded-md border overflow-x-auto">
+          {scope === "all" ? (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={staff ? 5 : 4} className="h-20 text-center text-sm text-muted-foreground">
-                    Loading duties...
-                  </TableCell>
+                  <TableHead className="min-w-[180px]">Duty Place</TableHead>
+                  {timeSlots.map((slot) => (
+                    <TableHead key={slot.key} className="min-w-[160px] text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-sm font-medium">
+                          {toTimeLabel(slot.startTime, slot.endTime)}
+                        </span>
+                        {staff ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => openSlotEditor(slot)}
+                          >
+                            <Pencil className="mr-1 h-3 w-3" />
+                            Edit time
+                          </Button>
+                        ) : null}
+                      </div>
+                    </TableHead>
+                  ))}
                 </TableRow>
-              ) : todayDuties.length ? (
-                todayDuties.map((duty) => (
-                  <TableRow key={duty.id}>
-                    <TableCell className="font-medium">
-                      {format(new Date(duty.startTime), "p")} - {format(new Date(duty.endTime), "p")}
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={Math.max(1, timeSlots.length + 1)}
+                      className="h-20 text-center text-sm text-muted-foreground"
+                    >
+                      Loading duties...
                     </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{duty.location ?? "Unspecified"}</div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {duty.title ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {duty.memberNames?.length ? duty.memberNames.join(", ") : "Unassigned"}
-                    </TableCell>
-                    {staff ? (
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7"
-                            onClick={() => openEditor(duty)}
-                          >
-                            <span className="sr-only">Edit</span>
-                            <Users className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7 text-destructive"
-                            onClick={() => handleDelete(duty.id)}
-                          >
-                            <span className="sr-only">Delete</span>
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
+                  </TableRow>
+                ) : timeSlots.length && locationRows.length ? (
+                  locationRows.map((row) => (
+                    <TableRow key={row.key}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <span>{row.label}</span>
+                          {staff ? (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              onClick={() => openLocationEditor(row)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                              <span className="sr-only">Edit location</span>
+                            </Button>
+                          ) : null}
                         </div>
                       </TableCell>
-                    ) : null}
+                      {timeSlots.map((slot) => {
+                        const key = `${row.key}||${slot.key}`;
+                        const duty = dutyGrid.get(key);
+                        return (
+                          <TableCell key={key} className="align-top text-center">
+                            <div className="text-sm text-muted-foreground">
+                              {duty?.memberNames?.length
+                                ? duty.memberNames.join(", ")
+                                : "Unassigned"}
+                            </div>
+                            {staff ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="mt-2 h-7 px-2 text-xs"
+                                onClick={() => openAssignmentEditor(row, slot, duty)}
+                              >
+                                Assign
+                              </Button>
+                            ) : null}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={Math.max(1, timeSlots.length + 1)}
+                      className="h-20 text-center text-sm text-muted-foreground"
+                    >
+                      No duties scheduled.
+                    </TableCell>
                   </TableRow>
-                ))
-              ) : (
+                )}
+              </TableBody>
+            </Table>
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={staff ? 5 : 4} className="h-20 text-center text-sm text-muted-foreground">
-                    No duties scheduled.
-                  </TableCell>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Duty</TableHead>
+                  <TableHead>Members</TableHead>
+                  {staff ? <TableHead className="text-right">Actions</TableHead> : null}
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={staff ? 5 : 4} className="h-20 text-center text-sm text-muted-foreground">
+                      Loading duties...
+                    </TableCell>
+                  </TableRow>
+                ) : todayDuties.length ? (
+                  todayDuties.map((duty) => (
+                    <TableRow key={duty.id}>
+                      <TableCell className="font-medium">
+                        {format(new Date(duty.startTime), "p")} - {format(new Date(duty.endTime), "p")}
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{duty.location ?? "Unspecified"}</div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {duty.title ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {duty.memberNames?.length ? duty.memberNames.join(", ") : "Unassigned"}
+                      </TableCell>
+                      {staff ? (
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              onClick={() => openEditor(duty)}
+                            >
+                              <span className="sr-only">Edit</span>
+                              <Users className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 text-destructive"
+                              onClick={() => handleDelete(duty.id)}
+                            >
+                              <span className="sr-only">Delete</span>
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      ) : null}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={staff ? 5 : 4} className="h-20 text-center text-sm text-muted-foreground">
+                      No duties scheduled.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </CardContent>
 
@@ -311,27 +640,18 @@ export function DutyScheduleEditor() {
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="duty-location">Location</Label>
-            <Select value={location} onValueChange={setLocation}>
-              <SelectTrigger id="duty-location">
-                <SelectValue placeholder="Select location" />
-              </SelectTrigger>
-              <SelectContent>
-                {dutyLocations.map((loc) => (
-                  <SelectItem key={loc} value={loc}>
-                    {loc}
-                  </SelectItem>
-                ))}
-                {location && !dutyLocations.includes(location) ? (
-                  <SelectItem value={location}>{location}</SelectItem>
-                ) : null}
-              </SelectContent>
-            </Select>
+            <Input
+              id="duty-location"
+              value={location}
+              onChange={(event) => setLocation(event.target.value)}
+              placeholder="Location name"
+            />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="duty-start">Start</Label>
             <Input
               id="duty-start"
-              type="datetime-local"
+              type="time"
               value={startTime}
               onChange={(event) => setStartTime(event.target.value)}
             />
@@ -340,7 +660,7 @@ export function DutyScheduleEditor() {
             <Label htmlFor="duty-end">End</Label>
             <Input
               id="duty-end"
-              type="datetime-local"
+              type="time"
               value={endTime}
               onChange={(event) => setEndTime(event.target.value)}
             />
@@ -361,6 +681,109 @@ export function DutyScheduleEditor() {
                   {member.name}
                 </label>
               ))}
+            </div>
+          </div>
+        </div>
+      </MotionModal>
+
+      <MotionModal
+        open={slotEditor.open}
+        onOpenChange={(open) => setSlotEditor((prev) => ({ ...prev, open }))}
+        title="Edit Duty Time"
+        description="Update the time range for this column."
+        contentClassName="sm:max-w-[420px]"
+        footer={<Button onClick={handleSaveSlot}>Save Time</Button>}
+      >
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="slot-start">Start</Label>
+            <Input
+              id="slot-start"
+              type="time"
+              value={slotEditor.start}
+              onChange={(event) =>
+                setSlotEditor((prev) => ({ ...prev, start: event.target.value }))
+              }
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="slot-end">End</Label>
+            <Input
+              id="slot-end"
+              type="time"
+              value={slotEditor.end}
+              onChange={(event) =>
+                setSlotEditor((prev) => ({ ...prev, end: event.target.value }))
+              }
+            />
+          </div>
+        </div>
+      </MotionModal>
+
+      <MotionModal
+        open={locationEditor.open}
+        onOpenChange={(open) => setLocationEditor((prev) => ({ ...prev, open }))}
+        title="Edit Duty Place"
+        description="Update the location name for this row."
+        contentClassName="sm:max-w-[420px]"
+        footer={<Button onClick={handleSaveLocation}>Save Location</Button>}
+      >
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="location-edit">Location</Label>
+            <Input
+              id="location-edit"
+              value={locationEditor.next}
+              onChange={(event) =>
+                setLocationEditor((prev) => ({ ...prev, next: event.target.value }))
+              }
+            />
+          </div>
+        </div>
+      </MotionModal>
+
+      <MotionModal
+        open={assignmentEditor.open}
+        onOpenChange={(open) => setAssignmentEditor((prev) => ({ ...prev, open }))}
+        title="Assign Members"
+        description="Assign members to this duty slot."
+        contentClassName="sm:max-w-[520px]"
+        footer={<Button onClick={handleSaveAssignment}>Save Assignment</Button>}
+      >
+        <div className="grid gap-4 py-4">
+          <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+            <div className="font-medium">
+              {assignmentEditor.location?.label ?? "Location"}
+            </div>
+            <div className="text-muted-foreground">
+              {assignmentEditor.slot
+                ? toTimeLabel(assignmentEditor.slot.startTime, assignmentEditor.slot.endTime)
+                : ""}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Members</Label>
+            <div className="grid gap-2">
+              {memberOptions.length ? (
+                memberOptions.map((member) => (
+                  <label key={member.id} className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={assignmentEditor.memberIds.includes(member.id)}
+                      onCheckedChange={(checked) => {
+                        setAssignmentEditor((prev) => ({
+                          ...prev,
+                          memberIds: checked
+                            ? [...prev.memberIds, member.id]
+                            : prev.memberIds.filter((id) => id !== member.id),
+                        }));
+                      }}
+                    />
+                    {member.name}
+                  </label>
+                ))
+              ) : (
+                <div className="text-sm text-muted-foreground">No members found.</div>
+              )}
             </div>
           </div>
         </div>
