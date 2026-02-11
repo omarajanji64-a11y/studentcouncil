@@ -102,7 +102,7 @@ const applyTime = (baseTimestamp: number, timeValue: string) => {
 export function DutyScheduleEditor() {
   const { user } = useAuth();
   const staff = isStaff(user);
-  const { data: duties, loading, refresh } = useDuties({ enabled: !!user, realtime: false });
+  const { data: duties, loading, refresh } = useDuties({ enabled: !!user, realtime: true });
   const { data: users } = useUsers({ enabled: staff, realtime: false });
   const { toast } = useToast();
   const [editor, setEditor] = useState<EditorState>({ open: false, duty: null });
