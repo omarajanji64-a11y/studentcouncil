@@ -80,7 +80,7 @@ export function OverridePassButton() {
           expiresAt: resolvedExpiresAt,
           passType: "override",
           override: true,
-          durationMinutes: durationMode === "specific" ? duration : undefined,
+          ...(durationMode === "specific" ? { durationMinutes: duration } : {}),
         },
         user.uid
       );

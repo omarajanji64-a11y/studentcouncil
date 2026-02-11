@@ -69,16 +69,19 @@ export function CreatePassButton() {
         durationMode === "end_of_break" && activeBreak
           ? activeBreak.endTime
           : Date.now() + duration * 60 * 1000;
-      await createPass({
-        studentName,
-        studentGender,
-        reason,
-        issuedBy: user.name,
-        issuedById: user.uid,
-        expiresAt,
-        passType: durationMode === "end_of_break" ? "active_break" : "time_specified",
-        durationMinutes: durationMode === "specific" ? duration : undefined,
-      }, user.uid);
+      await createPass(
+        {
+          studentName,
+          studentGender,
+          reason,
+          issuedBy: user.name,
+          issuedById: user.uid,
+          expiresAt,
+          passType: durationMode === "end_of_break" ? "active_break" : "time_specified",
+          ...(durationMode === "specific" ? { durationMinutes: duration } : {}),
+        },
+        user.uid
+      );
       setIsCreating(false);
       setIsOpen(false);
       setStudentName("");
