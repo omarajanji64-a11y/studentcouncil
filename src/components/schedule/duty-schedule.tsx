@@ -34,6 +34,7 @@ export function DutyScheduleEditor() {
   const [anchorDate, setAnchorDate] = useState(() => new Date());
   const [editor, setEditor] = useState<EditorState>({ open: false, duty: null });
   const [scope, setScope] = useState<"personal" | "all">("personal");
+  const [genderScope, setGenderScope] = useState<"all" | "boys" | "girls">("all");
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
   const [startTime, setStartTime] = useState("");
@@ -51,16 +52,33 @@ export function DutyScheduleEditor() {
     }
   }, [staff]);
 
+  useEffect(() => {
+    if (staff) return;
+    if (user?.gender === "male") {
+      setGenderScope("boys");
+      return;
+    }
+    if (user?.gender === "female") {
+      setGenderScope("girls");
+      return;
+    }
+    setGenderScope("all");
+  }, [staff, user?.gender]);
+
   const genderFilteredDuties = useMemo(() => {
-    if (staff || !user?.gender) return duties;
-    const token = user.gender === "male" ? "boys" : "girls";
+    if (!user?.gender && !staff) return duties;
+    const token =
+      genderScope === "all"
+        ? null
+        : genderScope;
     return duties.filter((duty) => {
       const haystack = `${duty.location ?? ""} ${duty.title ?? ""}`.toLowerCase();
       const hasGender = haystack.includes("boys") || haystack.includes("girls");
       if (!hasGender) return true;
+      if (!token) return true;
       return haystack.includes(token);
     });
-  }, [duties, staff, user]);
+  }, [duties, staff, user, genderScope]);
 
   const scopedDuties = useMemo(() => {
     if (scope === "personal" && user) {
@@ -196,7 +214,9 @@ export function DutyScheduleEditor() {
             <CalendarDays className="h-5 w-5 text-primary" />
             Duty Schedule
           </CardTitle>
-          <CardDescription>Plan shifts, assign members, and drag duties across days.</CardDescription>
+          <CardDescription>
+            Plan shifts with exact times, filter by boys/girls, and assign members.
+          </CardDescription>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -241,6 +261,18 @@ export function DutyScheduleEditor() {
                 <TabsTrigger value="all">All</TabsTrigger>
               </TabsList>
             </Tabs>
+            {staff ? (
+              <Tabs
+                value={genderScope}
+                onValueChange={(value) => setGenderScope(value as any)}
+              >
+                <TabsList>
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="boys">Boys</TabsTrigger>
+                  <TabsTrigger value="girls">Girls</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            ) : null}
             <TabsList>
               <TabsTrigger value="day">Day</TabsTrigger>
               <TabsTrigger value="week">Week</TabsTrigger>
