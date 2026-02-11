@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
   startAfter,
@@ -50,6 +51,7 @@ export default function ComplaintsPage() {
   }, [searchInput]);
 
   const normalizedSearch = search.trim().toLowerCase();
+  const isLivePage = staffView && !normalizedSearch && pageIndex === 0;
   const queryKey = useMemo(
     () => `${staffView ? "staff" : "member"}:${user?.uid ?? ""}:${normalizedSearch}`,
     [staffView, user?.uid, normalizedSearch]
@@ -67,6 +69,7 @@ export default function ComplaintsPage() {
   useEffect(() => {
     if (!user) return;
     if (!staffView) return;
+    if (isLivePage) return;
     if (currentPage) return;
     const col = collections.complaints();
     if (!col) {
@@ -131,6 +134,40 @@ export default function ComplaintsPage() {
       active = false;
     };
   }, [user, staffView, normalizedSearch, pageIndex, currentPage, pageInfo]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (!isLivePage) return;
+    const col = collections.complaints();
+    if (!col) {
+      setError("Firestore not configured.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    const unsubscribe = onSnapshot(
+      query(col, orderBy("timestamp", "desc"), limit(pageSize + 1)),
+      (snapshot) => {
+        const docs = snapshot.docs.map((doc) =>
+          converters.complaint.fromFirestore(doc)
+        );
+        const hasNext = docs.length > pageSize;
+        const pageDocs = hasNext ? docs.slice(0, pageSize) : docs;
+        const nextCursor = hasNext ? snapshot.docs[pageSize - 1] : null;
+        setPages((prev) => ({ ...prev, 0: pageDocs }));
+        setPageInfo((prev) => ({
+          ...prev,
+          0: { nextCursor, hasNext },
+        }));
+        setLoading(false);
+      },
+      (err) => {
+        setError(err.message || "Failed to load complaints.");
+        setLoading(false);
+      }
+    );
+    return () => unsubscribe();
+  }, [user, isLivePage, pageSize]);
 
   useEffect(() => {
     if (!user) return;
