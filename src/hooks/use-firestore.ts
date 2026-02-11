@@ -221,7 +221,6 @@ export const useActivePasses = (options: ActivePassOptions = {}) => {
     return query(
       col,
       where("status", "in", ["active", "pending"]),
-      orderBy("issuedAt", "desc"),
       limit(limitCount)
     );
   }, [enabled, limitCount]);
