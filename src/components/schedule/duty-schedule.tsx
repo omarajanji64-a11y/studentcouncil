@@ -75,9 +75,9 @@ const boysDutyLocations = [
   "4th floor door next to elevator",
   "4th floor boys staircase",
   "4th floor girls staircase",
-  "4th midschool help",
-  "2th floor door next to elevator",
-  "2th floor boys staircase",
+  "2nd floor segregation",
+  "2nd floor door next to elevator",
+  "2nd floor boys staircase",
 ];
 
 const allDutyLocations = [...girlsDutyLocations, ...boysDutyLocations];
