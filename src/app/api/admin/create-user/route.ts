@@ -7,6 +7,9 @@ const projectId = process.env.FIREBASE_PROJECT_ID;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const adminApp =
   getApps().length > 0
     ? getApps()[0]
@@ -57,7 +60,8 @@ export async function POST(request: Request) {
       .collection("users")
       .doc(decoded.uid)
       .get();
-    const requesterRole = requesterSnap.data()?.role;
+    const requesterRole =
+      requesterSnap.data()?.role ?? (decoded as { role?: string }).role;
     if (requesterRole !== "supervisor" && requesterRole !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }

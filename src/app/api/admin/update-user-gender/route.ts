@@ -56,7 +56,8 @@ export async function POST(request: Request) {
 
     const db = getFirestore(adminApp);
     const requesterSnap = await db.collection("users").doc(decoded.uid).get();
-    const requesterRole = requesterSnap.data()?.role;
+    const requesterRole =
+      requesterSnap.data()?.role ?? (decoded as { role?: string }).role;
     if (requesterRole !== "supervisor" && requesterRole !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
