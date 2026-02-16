@@ -80,6 +80,42 @@ const boysDutyLocations = [
   "2nd floor boys staircase",
 ];
 
+const boysDutyTemplateTimes = [
+  { start: "09:35", end: "09:45" },
+  { start: "10:30", end: "10:40" },
+  { start: "11:25", end: "11:35" },
+  { start: "12:20", end: "12:30" },
+  { start: "13:50", end: "14:10" },
+  { start: "14:55", end: "15:00" },
+] as const;
+
+const boysDutyTemplateAssignments = [
+  {
+    location: "4th floor door next to elevator",
+    members: ["Omar", "Mohammed", "Abdulrazaq", "Kenan", "Ibrahim", "Ayhan"],
+  },
+  {
+    location: "4th floor boys staircase",
+    members: ["Fahad", "Adam", "Omar", "Rida", "Abdulrazaq", "Omar"],
+  },
+  {
+    location: "4th floor girls staircase",
+    members: ["Abdulrazaq", "Yousif", "Suleyman", "Hesham", "Kenan", "Hesham"],
+  },
+  {
+    location: "2nd floor segregation",
+    members: ["Suleyman", "-", "-", "-", "-", "-"],
+  },
+  {
+    location: "2nd floor door next to elevator",
+    members: ["Rida", "Humam", "Ayhan", "Salah", "Humam", "Mohammed"],
+  },
+  {
+    location: "2nd floor boys staircase",
+    members: ["Hesham", "Ibrahim", "Salah", "Fahad", "Yousif", "Adam"],
+  },
+] as const;
+
 const allDutyLocations = [...girlsDutyLocations, ...boysDutyLocations];
 
 const normalizeLocation = (value?: string) => (value ?? "").trim().toLowerCase();
@@ -125,6 +161,7 @@ export function DutyScheduleEditor() {
     location: null,
     memberIds: [],
   });
+  const [isApplyingBoysTemplate, setIsApplyingBoysTemplate] = useState(false);
   const activeLocations = useMemo(() => {
     if (genderScope === "girls") return girlsDutyLocations;
     if (genderScope === "boys") return boysDutyLocations;
@@ -431,6 +468,135 @@ export function DutyScheduleEditor() {
     setSlotEditor({ open: true, slot: null, start: "", end: "" });
   };
 
+  const applyBoysDutyTemplate = async () => {
+    if (!staff || !user) return;
+    const shouldProceed = window.confirm(
+      "This will replace the current boys-duty grid with the provided template. Continue?"
+    );
+    if (!shouldProceed) return;
+
+    setIsApplyingBoysTemplate(true);
+    try {
+      const baseTimestamp = duties[0]?.startTime ?? Date.now();
+      const idsByName = new Map<string, string[]>();
+      users.forEach((member) => {
+        const key = member.name.trim().toLowerCase();
+        if (!key) return;
+        const existing = idsByName.get(key) ?? [];
+        existing.push(member.uid);
+        idsByName.set(key, existing);
+      });
+
+      const missingUsers = new Set<string>();
+      const templateRows = boysDutyTemplateAssignments.flatMap((row) =>
+        boysDutyTemplateTimes.map((slot, index) => {
+          const rawName = row.members[index]?.trim() ?? "";
+          const memberNames = rawName && rawName !== "-" ? [rawName] : [];
+          const memberIds = memberNames.flatMap((memberName) => {
+            const ids = idsByName.get(memberName.toLowerCase());
+            if (!ids?.length) {
+              missingUsers.add(memberName);
+              return [];
+            }
+            return [ids[0]];
+          });
+          return {
+            location: row.location,
+            title: row.location,
+            startTime: applyTime(baseTimestamp, slot.start),
+            endTime: applyTime(baseTimestamp, slot.end),
+            memberNames,
+            memberIds,
+          };
+        })
+      );
+
+      const boysLocationSet = new Set(boysDutyLocations.map(normalizeLocation));
+      const existingBoysDuties = duties.filter((duty) =>
+        boysLocationSet.has(normalizeLocation(duty.location))
+      );
+
+      const existingByKey = new Map(
+        existingBoysDuties.map((duty) => [
+          `${normalizeLocation(duty.location)}||${toTimeKey(duty.startTime, duty.endTime)}`,
+          duty,
+        ])
+      );
+
+      const templateKeySet = new Set(
+        templateRows.map(
+          (row) =>
+            `${normalizeLocation(row.location)}||${toTimeKey(row.startTime, row.endTime)}`
+        )
+      );
+
+      const staleRows = existingBoysDuties.filter((duty) => {
+        const key = `${normalizeLocation(duty.location)}||${toTimeKey(duty.startTime, duty.endTime)}`;
+        return !templateKeySet.has(key);
+      });
+
+      if (staleRows.length) {
+        await Promise.all(staleRows.map((duty) => deleteDuty(duty.id, user.uid)));
+      }
+
+      await Promise.all(
+        templateRows.map((row) => {
+          const key = `${normalizeLocation(row.location)}||${toTimeKey(
+            row.startTime,
+            row.endTime
+          )}`;
+          const existing = existingByKey.get(key);
+          if (existing) {
+            return updateDuty(
+              existing.id,
+              {
+                title: row.title,
+                location: row.location,
+                startTime: row.startTime,
+                endTime: row.endTime,
+                memberIds: row.memberIds,
+                memberNames: row.memberNames,
+              },
+              user.uid
+            );
+          }
+          return createDuty(
+            {
+              title: row.title,
+              location: row.location,
+              startTime: row.startTime,
+              endTime: row.endTime,
+              memberIds: row.memberIds,
+              memberNames: row.memberNames,
+            },
+            user.uid
+          );
+        })
+      );
+
+      refresh?.();
+      setScope("all");
+      setGenderScope("boys");
+      toast({
+        title: "Boys duty schedule filled",
+        description: missingUsers.size
+          ? `Template applied. Missing users by name: ${Array.from(missingUsers).join(", ")}.`
+          : "Template applied to all boys-duty locations and times.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Template failed",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Could not apply the boys-duty template.",
+      });
+    } finally {
+      setIsApplyingBoysTemplate(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -442,6 +608,17 @@ export function DutyScheduleEditor() {
           <CardDescription>Daily duty schedule (time only).</CardDescription>
         </div>
         <div className="flex items-center gap-2">
+          {staff ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1"
+              disabled={isApplyingBoysTemplate}
+              onClick={applyBoysDutyTemplate}
+            >
+              {isApplyingBoysTemplate ? "Applying..." : "Fill Boys Duty"}
+            </Button>
+          ) : null}
           {staff && scope === "all" ? (
             <Button size="sm" className="gap-1" onClick={openNewSlotEditor}>
               <PlusCircle className="h-4 w-4" />
