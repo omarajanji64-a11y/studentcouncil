@@ -36,7 +36,7 @@ import {
 import { useBreaksData } from "@/hooks/use-break-status";
 import { useAuth, useRequireAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { isAdmin } from "@/lib/permissions";
+import { isStaff } from "@/lib/permissions";
 
 export default function BreaksPage() {
   useRequireAuth();
@@ -50,7 +50,7 @@ export default function BreaksPage() {
   const [name, setName] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const canManageBreaks = isAdmin(user);
+  const canManageBreaks = isStaff(user);
 
   const isBreakActive = (b: Break) => {
     const now = Date.now();
@@ -62,7 +62,7 @@ export default function BreaksPage() {
       toast({
         variant: "destructive",
         title: "Not allowed",
-        description: "Only admins can create breaks.",
+        description: "Only supervisors and admins can create breaks.",
       });
       return;
     }
@@ -124,7 +124,7 @@ export default function BreaksPage() {
       toast({
         variant: "destructive",
         title: "Not allowed",
-        description: "Only admins can edit breaks.",
+        description: "Only supervisors and admins can edit breaks.",
       });
       return;
     }
@@ -157,7 +157,7 @@ export default function BreaksPage() {
       toast({
         variant: "destructive",
         title: "Not allowed",
-        description: "Only admins can delete breaks.",
+        description: "Only supervisors and admins can delete breaks.",
       });
       return;
     }
@@ -383,8 +383,8 @@ export default function BreaksPage() {
           <CardHeader>
             <CardTitle>Scheduled Breaks</CardTitle>
             <CardDescription>
-              View-only schedule for non-admin roles. Passes can only be issued
-              during these scheduled times.
+              View-only schedule for members. Passes can only be issued during
+              these scheduled times.
             </CardDescription>
           </CardHeader>
           <CardContent>{renderBreaksTable(false)}</CardContent>
