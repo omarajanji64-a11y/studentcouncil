@@ -36,7 +36,7 @@ import {
 import { useBreaksData } from "@/hooks/use-break-status";
 import { useAuth, useRequireAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { isStaff } from "@/lib/permissions";
+import { isAdmin } from "@/lib/permissions";
 
 export default function BreaksPage() {
   useRequireAuth();
@@ -50,7 +50,7 @@ export default function BreaksPage() {
   const [name, setName] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const canManageBreaks = isStaff(user);
+  const canManageBreaks = isAdmin(user);
 
   const isBreakActive = (b: Break) => {
     const now = Date.now();
@@ -58,6 +58,14 @@ export default function BreaksPage() {
   };
 
   const handleCreateBreak = async () => {
+    if (!canManageBreaks) {
+      toast({
+        variant: "destructive",
+        title: "Not allowed",
+        description: "Only admins can create breaks.",
+      });
+      return;
+    }
     if (!name || !startTime || !endTime) {
       toast({
         variant: "destructive",
@@ -112,6 +120,14 @@ export default function BreaksPage() {
   };
 
   const handleUpdateBreak = async () => {
+    if (!canManageBreaks) {
+      toast({
+        variant: "destructive",
+        title: "Not allowed",
+        description: "Only admins can edit breaks.",
+      });
+      return;
+    }
     if (!activeBreakId) return;
     const today = new Date();
     const [startHour, startMinute] = startTime.split(":").map(Number);
@@ -137,6 +153,14 @@ export default function BreaksPage() {
   };
 
   const handleDeleteBreak = async (breakId: string) => {
+    if (!canManageBreaks) {
+      toast({
+        variant: "destructive",
+        title: "Not allowed",
+        description: "Only admins can delete breaks.",
+      });
+      return;
+    }
     await deleteBreak(breakId, user?.uid);
     toast({
       title: "Break deleted",
@@ -359,8 +383,8 @@ export default function BreaksPage() {
           <CardHeader>
             <CardTitle>Scheduled Breaks</CardTitle>
             <CardDescription>
-              View-only schedule for members. Passes can only be issued during
-              these scheduled times.
+              View-only schedule for non-admin roles. Passes can only be issued
+              during these scheduled times.
             </CardDescription>
           </CardHeader>
           <CardContent>{renderBreaksTable(false)}</CardContent>

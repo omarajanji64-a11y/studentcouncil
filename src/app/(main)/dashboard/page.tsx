@@ -21,7 +21,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const staffView = isStaff(user);
   const sinceMs = useMemo(() => Date.now() - 24 * 60 * 60 * 1000, []);
-  const { data: passes } = useActivePasses();
+  const { data: passes } = useActivePasses({ limit: 0 });
   const { data: complaints } = useComplaints({
     studentId: staffView ? undefined : user?.uid,
     enabled: !!user,
@@ -30,10 +30,9 @@ export default function DashboardPage() {
   });
   const { data: duties } = useDuties({ enabled: !!user, realtime: false });
 
-  const activePassPreview = passes
+  const activePasses = passes
     .filter((pass) => pass.status === "active")
-    .sort((a, b) => b.issuedAt - a.issuedAt)
-    .slice(0, 3);
+    .sort((a, b) => b.issuedAt - a.issuedAt);
 
   const visibleComplaints = staffView
     ? complaints
@@ -74,30 +73,7 @@ export default function DashboardPage() {
           <h2 className="text-xl font-semibold tracking-tight">
             Quick Preview
           </h2>
-          <AnimatedList className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <AnimatedCard>
-              <Card className="h-full">
-                <CardHeader>
-                  <CardTitle>Active Passes</CardTitle>
-                  <CardDescription>Latest active passes</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  {activePassPreview.length ? (
-                    activePassPreview.map((pass) => (
-                      <div key={pass.id} className="flex items-center justify-between gap-3">
-                        <div className="truncate font-medium">{pass.studentName}</div>
-                        <div className="text-muted-foreground">
-                          {format(new Date(pass.issuedAt), "p")}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-muted-foreground">No active passes.</div>
-                  )}
-                </CardContent>
-              </Card>
-            </AnimatedCard>
-
+          <AnimatedList className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <AnimatedCard>
               <Card className="h-full">
                 <CardHeader>
@@ -151,6 +127,42 @@ export default function DashboardPage() {
               </Card>
             </AnimatedCard>
           </AnimatedList>
+
+          <AnimatedCard>
+            <Card>
+              <CardHeader>
+                <CardTitle>Active Pass List</CardTitle>
+                <CardDescription>Full list of all currently active passes.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {activePasses.length ? (
+                  activePasses.map((pass) => (
+                    <div key={pass.id} className="rounded-md border p-3">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-medium">{pass.studentName}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {pass.permissionLocation ?? "Canteen"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground break-words">
+                            {pass.reason}
+                          </p>
+                        </div>
+                        <div className="grid gap-1 text-xs text-muted-foreground sm:text-right">
+                          <span>Issued: {format(new Date(pass.issuedAt), "p")}</span>
+                          <span>Expires: {format(new Date(pass.expiresAt), "p")}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-sm text-muted-foreground">No active passes.</div>
+                )}
+              </CardContent>
+            </Card>
+          </AnimatedCard>
         </div>
       </div>
     </div>

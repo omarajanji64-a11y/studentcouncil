@@ -6,6 +6,7 @@ import {
   addDoc,
   arrayUnion,
   deleteDoc,
+  getDoc,
   getDocs,
   limit,
   onSnapshot,
@@ -27,6 +28,23 @@ type LoadingState<T> = {
   loading: boolean;
   error: string | null;
   refresh?: () => void;
+};
+
+const getActorRole = async (actorId: string): Promise<User["role"] | null> => {
+  const actorRef = docRefs.user(actorId);
+  if (!actorRef) throw new Error("Firestore not configured");
+  const snapshot = await getDoc(actorRef);
+  if (!snapshot.exists()) return null;
+  const role = snapshot.data()?.role;
+  return role === "admin" || role === "supervisor" || role === "member" ? role : null;
+};
+
+const assertAdminActor = async (actorId?: string) => {
+  if (!actorId) throw new Error("Only admins can manage breaks.");
+  const role = await getActorRole(actorId);
+  if (role !== "admin") {
+    throw new Error("Only admins can manage breaks.");
+  }
 };
 
 const useCollection = <T,>(
@@ -688,6 +706,7 @@ export const updatePassStatus = async (
 };
 
 export const createBreak = async (breakItem: Omit<Break, "id">, actorId?: string) => {
+  await assertAdminActor(actorId);
   const col = collections.breaks();
   if (!col) throw new Error("Firestore not configured");
   const ref = await addDoc(col, {
@@ -709,11 +728,16 @@ export const updateBreak = async (
   update: Partial<Break>,
   actorId?: string
 ) => {
+  await assertAdminActor(actorId);
   const ref = docRefs.break(breakId);
   if (!ref) throw new Error("Firestore not configured");
   const payload: Record<string, any> = { ...update };
-  if (update.startTime) payload.startTime = Timestamp.fromMillis(update.startTime);
-  if (update.endTime) payload.endTime = Timestamp.fromMillis(update.endTime);
+  if (typeof update.startTime === "number") {
+    payload.startTime = Timestamp.fromMillis(update.startTime);
+  }
+  if (typeof update.endTime === "number") {
+    payload.endTime = Timestamp.fromMillis(update.endTime);
+  }
   await updateDoc(ref, payload);
   await logAction({
     userId: actorId ?? "system",
@@ -725,6 +749,7 @@ export const updateBreak = async (
 };
 
 export const deleteBreak = async (breakId: string, actorId?: string) => {
+  await assertAdminActor(actorId);
   const ref = docRefs.break(breakId);
   if (!ref) throw new Error("Firestore not configured");
   await deleteDoc(ref);

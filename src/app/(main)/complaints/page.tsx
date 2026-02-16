@@ -50,8 +50,8 @@ export default function ComplaintsPage() {
   const normalizedSearch = search.trim().toLowerCase();
   const isLivePage = !normalizedSearch && pageIndex === 0;
   const queryKey = useMemo(
-    () => `all:${normalizedSearch}`,
-    [normalizedSearch]
+    () => `${staffView ? "staff" : user?.uid ?? "anon"}:${normalizedSearch}`,
+    [normalizedSearch, staffView, user?.uid]
   );
 
   useEffect(() => {
@@ -79,7 +79,10 @@ export default function ComplaintsPage() {
     setError(null);
 
     const constraints: any[] = [];
-    if (normalizedSearch) {
+    if (!staffView) {
+      constraints.push(where("studentId", "==", user.uid));
+    }
+    if (normalizedSearch && staffView) {
       constraints.push(where("targetNameLower", ">=", normalizedSearch));
       constraints.push(where("targetNameLower", "<=", `${normalizedSearch}\uf8ff`));
       constraints.push(orderBy("targetNameLower"));
@@ -98,9 +101,9 @@ export default function ComplaintsPage() {
       try {
         const snapshot = await getDocs(query(col, ...constraints));
         if (!active) return;
-        const docs = snapshot.docs.map((doc) =>
-          converters.complaint.fromFirestore(doc)
-        );
+        const docs = snapshot.docs
+          .map((doc) => converters.complaint.fromFirestore(doc))
+          .filter((complaint) => staffView || complaint.studentId === user.uid);
         const hasNext = docs.length > pageSize;
         const pageDocs = hasNext ? docs.slice(0, pageSize) : docs;
         const nextCursor =
@@ -125,7 +128,7 @@ export default function ComplaintsPage() {
     return () => {
       active = false;
     };
-  }, [user, normalizedSearch, pageIndex, currentPage, pageInfo]);
+  }, [user, staffView, normalizedSearch, pageIndex, currentPage, pageInfo]);
 
   useEffect(() => {
     if (!user) return;
@@ -137,12 +140,18 @@ export default function ComplaintsPage() {
     }
     setLoading(true);
     setError(null);
+    const liveConstraints: any[] = [];
+    if (!staffView) {
+      liveConstraints.push(where("studentId", "==", user.uid));
+    }
+    liveConstraints.push(orderBy("timestamp", "desc"));
+    liveConstraints.push(limit(pageSize + 1));
     const unsubscribe = onSnapshot(
-      query(col, orderBy("timestamp", "desc"), limit(pageSize + 1)),
+      query(col, ...liveConstraints),
       (snapshot) => {
-        const docs = snapshot.docs.map((doc) =>
-          converters.complaint.fromFirestore(doc)
-        );
+        const docs = snapshot.docs
+          .map((doc) => converters.complaint.fromFirestore(doc))
+          .filter((complaint) => staffView || complaint.studentId === user.uid);
         const hasNext = docs.length > pageSize;
         const pageDocs = hasNext ? docs.slice(0, pageSize) : docs;
         const nextCursor = hasNext ? snapshot.docs[pageSize - 1] : null;
@@ -159,10 +168,12 @@ export default function ComplaintsPage() {
       }
     );
     return () => unsubscribe();
-  }, [user, isLivePage, pageSize]);
+  }, [user, staffView, isLivePage, pageSize]);
 
   if (!user) return null;
-  const complaints = currentPage ?? [];
+  const complaints = (currentPage ?? []).filter(
+    (complaint) => staffView || complaint.studentId === user.uid
+  );
   const hasNext = currentInfo?.hasNext ?? false;
   const isLoading = loading;
 
@@ -216,7 +227,7 @@ export default function ComplaintsPage() {
             }}
             searchValue={searchInput}
             onSearchChange={(value) => setSearchInput(value)}
-            serverSide
+            serverSide={staffView}
           />
         </CardContent>
       </Card>

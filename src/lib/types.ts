@@ -22,6 +22,7 @@ export type Pass = {
   id: string;
   studentName: string;
   studentGender?: "male" | "female" | "mixed";
+  permissionLocation?: string;
   reason: string;
   issuedBy: string;
   issuedById?: string;

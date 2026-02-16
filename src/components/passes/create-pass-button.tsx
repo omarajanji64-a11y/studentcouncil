@@ -20,27 +20,39 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const DEFAULT_PERMISSION_LOCATION = "Canteen";
+const DEFAULT_DURATION_MINUTES = "10";
+
 export function CreatePassButton() {
   const { isBreakActive, activeBreak } = useBreakStatus();
   const [isOpen, setIsOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [studentGender, setStudentGender] = useState<"male" | "female" | "">("");
+  const [permissionLocation, setPermissionLocation] = useState(DEFAULT_PERMISSION_LOCATION);
   const [reason, setReason] = useState("");
   const [durationMode, setDurationMode] = useState<"end_of_break" | "specific">(
-    "end_of_break"
+    "specific"
   );
-  const [durationMinutes, setDurationMinutes] = useState("30");
+  const [durationMinutes, setDurationMinutes] = useState(DEFAULT_DURATION_MINUTES);
   const { toast } = useToast();
   const { user } = useAuth();
+  const resetForm = () => {
+    setStudentName("");
+    setStudentGender("");
+    setPermissionLocation(DEFAULT_PERMISSION_LOCATION);
+    setReason("");
+    setDurationMode("specific");
+    setDurationMinutes(DEFAULT_DURATION_MINUTES);
+  };
 
   const handleCreatePass = async () => {
     if (!user) return;
-    if (!studentName || !reason) {
+    if (!studentName || !reason || !permissionLocation.trim()) {
       toast({
         variant: "destructive",
         title: "Missing fields",
-        description: "Student name and reason are required.",
+        description: "Student name, permission location, and reason are required.",
       });
       return;
     }
@@ -64,7 +76,7 @@ export function CreatePassButton() {
 
     setIsCreating(true);
     try {
-      const duration = Number(durationMinutes) || 30;
+      const duration = Math.max(1, Number(durationMinutes) || 10);
       const expiresAt =
         durationMode === "end_of_break" && activeBreak
           ? activeBreak.endTime
@@ -73,6 +85,7 @@ export function CreatePassButton() {
         {
           studentName,
           studentGender,
+          permissionLocation: permissionLocation.trim(),
           reason,
           issuedBy: user.name,
           issuedById: user.uid,
@@ -84,9 +97,7 @@ export function CreatePassButton() {
       );
       setIsCreating(false);
       setIsOpen(false);
-      setStudentName("");
-      setStudentGender("");
-      setReason("");
+      resetForm();
       toast({
         title: "Pass Created",
         description: "A new pass has been successfully issued.",
@@ -110,7 +121,12 @@ export function CreatePassButton() {
   return (
     <MotionModal
       open={isOpen}
-      onOpenChange={setIsOpen}
+      onOpenChange={(open) => {
+        setIsOpen(open);
+        if (!open) {
+          resetForm();
+        }
+      }}
       trigger={
         <Button size="sm" className="gap-1">
           <PlusCircle className="h-4 w-4" />
@@ -189,6 +205,18 @@ export function CreatePassButton() {
           />
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+          <Label htmlFor="permission-location" className="sm:text-right">
+            Location
+          </Label>
+          <Input
+            id="permission-location"
+            placeholder="e.g., Canteen"
+            className="sm:col-span-3"
+            value={permissionLocation}
+            onChange={(event) => setPermissionLocation(event.target.value)}
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
           <Label htmlFor="reason" className="sm:text-right">
             Reason
           </Label>
@@ -208,7 +236,7 @@ export function CreatePassButton() {
             <Input
               id="duration"
               type="number"
-              min={5}
+              min={1}
               className="sm:col-span-3"
               value={durationMinutes}
               onChange={(event) => setDurationMinutes(event.target.value)}

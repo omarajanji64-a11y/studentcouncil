@@ -68,7 +68,7 @@ export function ComplaintsTable({
   }, [duties]);
 
   const effectiveFilter = searchValue ?? filter;
-  const showAdvancedFilters = !serverSide;
+  const showAdvancedFilters = !serverSide && !!staffView;
 
   const filtered = useMemo(() => {
     let filteredData = serverSide
@@ -125,7 +125,7 @@ export function ComplaintsTable({
   };
 
   const handleUpdate = async () => {
-    if (!activeComplaint || !user) return;
+    if (!activeComplaint || !user || !staffView) return;
     try {
       await updateComplaint(
         activeComplaint.id,
@@ -310,8 +310,9 @@ export function ComplaintsTable({
         )}
       </div>
 
-      <div className="hidden md:block rounded-md border">
-        <Table>
+      <div className="hidden md:block">
+        <div className="overflow-x-auto rounded-md border">
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Reported By</TableHead>
@@ -378,7 +379,8 @@ export function ComplaintsTable({
               </TableRow>
             )}
           </TableBody>
-        </Table>
+          </Table>
+        </div>
       </div>
 
       <MotionModal

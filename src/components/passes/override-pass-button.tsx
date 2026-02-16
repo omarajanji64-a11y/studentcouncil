@@ -25,24 +25,33 @@ export function OverridePassButton() {
   const [isCreating, setIsCreating] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [studentGender, setStudentGender] = useState<"male" | "female" | "">("");
+  const [permissionLocation, setPermissionLocation] = useState("Canteen");
   const [reason, setReason] = useState("");
   const [durationMode, setDurationMode] = useState<"end_of_break" | "specific">(
-    "end_of_break"
+    "specific"
   );
-  const [durationMinutes, setDurationMinutes] = useState("30");
+  const [durationMinutes, setDurationMinutes] = useState("10");
   const { toast } = useToast();
   const { user } = useAuth();
   const { activeBreak, isBreakActive } = useBreakStatus();
+  const resetForm = () => {
+    setStudentName("");
+    setStudentGender("");
+    setPermissionLocation("Canteen");
+    setReason("");
+    setDurationMinutes("10");
+    setDurationMode("specific");
+  };
 
   if (!isStaff(user)) return null;
 
   const handleOverride = async () => {
     if (!user) return;
-    if (!studentName || !reason) {
+    if (!studentName || !reason || !permissionLocation.trim()) {
       toast({
         variant: "destructive",
         title: "Missing fields",
-        description: "Student name and reason are required for overrides.",
+        description: "Student name, permission location, and reason are required.",
       });
       return;
     }
@@ -65,7 +74,7 @@ export function OverridePassButton() {
 
     setIsCreating(true);
     try {
-      const duration = Number(durationMinutes) || 30;
+      const duration = Math.max(1, Number(durationMinutes) || 10);
       const resolvedExpiresAt =
         durationMode === "end_of_break" && activeBreak
           ? activeBreak.endTime
@@ -74,6 +83,7 @@ export function OverridePassButton() {
         {
           studentName,
           studentGender,
+          permissionLocation: permissionLocation.trim(),
           reason,
           issuedBy: user.name,
           issuedById: user.uid,
@@ -86,11 +96,7 @@ export function OverridePassButton() {
       );
       setIsCreating(false);
       setIsOpen(false);
-      setStudentName("");
-      setStudentGender("");
-      setReason("");
-      setDurationMinutes("30");
-      setDurationMode("end_of_break");
+      resetForm();
       toast({
         title: "Override Created",
         description: "Emergency override pass has been issued.",
@@ -112,7 +118,12 @@ export function OverridePassButton() {
   return (
     <MotionModal
       open={isOpen}
-      onOpenChange={setIsOpen}
+      onOpenChange={(open) => {
+        setIsOpen(open);
+        if (!open) {
+          resetForm();
+        }
+      }}
       trigger={
         <Button size="sm" variant="destructive" className="gap-1">
           <Shield className="h-4 w-4" />
@@ -196,6 +207,18 @@ export function OverridePassButton() {
           </Select>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+          <Label htmlFor="override-location" className="sm:text-right">
+            Location
+          </Label>
+          <Input
+            id="override-location"
+            placeholder="e.g., Canteen"
+            className="sm:col-span-3"
+            value={permissionLocation}
+            onChange={(event) => setPermissionLocation(event.target.value)}
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
           <Label htmlFor="override-reason" className="sm:text-right">
             Reason
           </Label>
@@ -215,7 +238,7 @@ export function OverridePassButton() {
             <Input
               id="override-duration-mins"
               type="number"
-              min={5}
+              min={1}
               className="sm:col-span-3"
               value={durationMinutes}
               onChange={(event) => setDurationMinutes(event.target.value)}
