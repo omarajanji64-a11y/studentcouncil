@@ -236,11 +236,13 @@ export const useActivePasses = (options: ActivePassOptions = {}) => {
     if (!enabled) return null;
     const col = collections.passes();
     if (!col) return null;
-    return query(
-      col,
-      where("status", "in", ["active", "pending"]),
-      limit(limitCount)
-    );
+    const constraints: any[] = [where("status", "in", ["active", "pending"])];
+    const normalizedLimit =
+      typeof limitCount === "number" ? Math.floor(limitCount) : 0;
+    if (normalizedLimit > 0) {
+      constraints.push(limit(normalizedLimit));
+    }
+    return query(col, ...constraints);
   }, [enabled, limitCount]);
   return useCollection<Pass>(q, converters.pass.fromFirestore, realtime);
 };
