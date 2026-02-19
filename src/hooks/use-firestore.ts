@@ -842,6 +842,7 @@ export const createComplaint = async (
       title: complaint.title,
       dutyId: complaint.dutyId ?? null,
       studentId: complaint.studentId,
+      studentName: complaint.studentName ?? null,
       dutyLocation: complaint.dutyLocation ?? null,
     },
   });

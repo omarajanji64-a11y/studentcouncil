@@ -60,6 +60,7 @@ export function ComplaintsTable({
   const [activeComplaint, setActiveComplaint] = useState<Complaint | null>(null);
   const [status, setStatus] = useState<Complaint["status"]>("Open");
   const [gallery, setGallery] = useState<Complaint | null>(null);
+  const [detailComplaint, setDetailComplaint] = useState<Complaint | null>(null);
 
   const dutyLabel = useMemo(() => {
     const map = new Map<string, string>();
@@ -124,6 +125,10 @@ export function ComplaintsTable({
     setStatus(complaint.status);
   };
 
+  const openDetails = (complaint: Complaint) => {
+    setDetailComplaint(complaint);
+  };
+
   const handleUpdate = async () => {
     if (!activeComplaint || !user || !staffView) return;
     try {
@@ -134,6 +139,7 @@ export function ComplaintsTable({
           handledBy: user.name,
           handledById: user.uid,
           studentId: activeComplaint.studentId,
+          studentName: activeComplaint.studentName,
         },
         user.uid
       );
@@ -255,7 +261,11 @@ export function ComplaintsTable({
                 : "Hidden";
             const targetLabel = complaint.targetName ?? complaint.title;
             return (
-              <Card key={complaint.id}>
+              <Card
+                key={complaint.id}
+                onDoubleClick={staffView ? () => openDetails(complaint) : undefined}
+                className={staffView ? "cursor-zoom-in" : undefined}
+              >
                 <CardContent className="pt-5 space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -335,7 +345,11 @@ export function ComplaintsTable({
               </TableRow>
             ) : filtered.length ? (
               filtered.map((complaint) => (
-                <TableRow key={complaint.id}>
+                <TableRow
+                  key={complaint.id}
+                  onDoubleClick={staffView ? () => openDetails(complaint) : undefined}
+                  className={staffView ? "cursor-zoom-in" : undefined}
+                >
                   <TableCell className="font-medium">
                     {complaint.targetType === "group" && complaint.groupName
                       ? complaint.groupName
@@ -382,6 +396,108 @@ export function ComplaintsTable({
           </Table>
         </div>
       </div>
+
+      <MotionModal
+        open={!!detailComplaint}
+        onOpenChange={(open) => !open && setDetailComplaint(null)}
+        title="Complaint Details"
+        description="Full context for supervisors. Double-click rows to open."
+        contentClassName="sm:max-w-[640px]"
+        footer={
+          <div className="flex w-full items-center justify-between gap-2">
+            <Button variant="outline" onClick={() => setDetailComplaint(null)}>
+              Close
+            </Button>
+            {staffView ? (
+              <Button
+                onClick={() => {
+                  if (detailComplaint) {
+                    openEditor(detailComplaint);
+                  }
+                  setDetailComplaint(null);
+                }}
+              >
+                Update Status
+              </Button>
+            ) : null}
+          </div>
+        }
+      >
+        {detailComplaint ? (
+          <div className="grid gap-3 py-2 text-sm">
+            <div className="grid gap-1 rounded-md border bg-muted/40 p-3">
+              <div className="text-xs uppercase text-muted-foreground">Complained Student</div>
+              <div className="text-base font-semibold">
+                {detailComplaint.targetName ?? detailComplaint.title}
+              </div>
+            </div>
+            <div className="grid gap-1 rounded-md border bg-muted/40 p-3">
+              <div className="text-xs uppercase text-muted-foreground">Reported By</div>
+              <div className="text-base font-semibold">
+                {isSupervisor(user)
+                  ? detailComplaint.studentName ?? detailComplaint.studentId
+                  : "Hidden"}
+              </div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
+                Description
+              </div>
+              <div className="leading-relaxed">{detailComplaint.description}</div>
+            </div>
+            <div className="grid gap-2 rounded-md border p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Duty</span>
+                <span className="font-medium">
+                  {detailComplaint.dutyId
+                    ? dutyLabel.get(detailComplaint.dutyId) ?? "Unknown"
+                    : "N/A"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Location</span>
+                <span className="font-medium">{detailComplaint.dutyLocation ?? "N/A"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Status</span>
+                <Badge variant="secondary">{detailComplaint.status}</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Submitted</span>
+                <span className="font-medium">
+                  {format(new Date(detailComplaint.timestamp), "PPp")}
+                </span>
+              </div>
+              {detailComplaint.handledBy ? (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Handled By</span>
+                  <span className="font-medium">{detailComplaint.handledBy}</span>
+                </div>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline">
+                {detailComplaint.attachments?.length ?? 0} attachment
+                {detailComplaint.attachments && detailComplaint.attachments.length === 1 ? "" : "s"}
+              </Badge>
+              {detailComplaint.attachments?.length ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setGallery(detailComplaint);
+                    setDetailComplaint(null);
+                  }}
+                >
+                  View attachments
+                </Button>
+              ) : (
+                <span className="text-xs text-muted-foreground">No attachments</span>
+              )}
+            </div>
+          </div>
+        ) : null}
+      </MotionModal>
 
       <MotionModal
         open={!!activeComplaint}
