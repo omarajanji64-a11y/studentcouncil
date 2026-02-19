@@ -83,6 +83,8 @@ const describeLog = (log: Log, lookup: NameLookup): DescribedLog => {
       summary = `${actorName} created a pass for ${student}.`;
     } else if (log.action === "pass_status_updated") {
       summary = `${actorName} updated pass ${log.entityId} to ${details.status ?? "updated"}.`;
+    } else if (log.action === "pass_deleted") {
+      summary = `${actorName} deleted permanent pass ${log.entityId}.`;
     }
   } else if (log.entityType === "auth") {
     if (log.action === "login") summary = `${actorName} signed in.`;

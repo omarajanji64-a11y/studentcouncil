@@ -14,13 +14,22 @@ import { AnimatedList } from "@/components/motion/animated-list";
 import { useAuth } from "@/hooks/use-auth";
 import { isStaff } from "@/lib/permissions";
 import { useActivePasses, useComplaints, useDuties } from "@/hooks/use-firestore";
-import { format } from "date-fns";
+import { format, formatDistanceToNowStrict } from "date-fns";
 import { useMemo } from "react";
+
+const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+
+const gradeColor: Record<"A" | "B" | "C" | "D", string> = {
+  A: "text-emerald-600",
+  B: "text-amber-600",
+  C: "text-orange-600",
+  D: "text-red-600",
+};
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const staffView = isStaff(user);
-  const sinceMs = useMemo(() => Date.now() - 24 * 60 * 60 * 1000, []);
+  const sinceMs = useMemo(() => Date.now() - TWO_DAYS_MS, []);
   const { data: passes } = useActivePasses({ limit: 0 });
   const { data: complaints } = useComplaints({
     studentId: staffView ? undefined : user?.uid,
@@ -30,9 +39,15 @@ export default function DashboardPage() {
   });
   const { data: duties } = useDuties({ enabled: !!user, realtime: false });
 
-  const activePasses = passes
+  const sortedActivePasses = passes
     .filter((pass) => pass.status === "active")
     .sort((a, b) => b.issuedAt - a.issuedAt);
+  const permanentPasses = sortedActivePasses.filter(
+    (pass) => pass.passType === "permanent"
+  );
+  const activePasses = sortedActivePasses.filter(
+    (pass) => pass.passType !== "permanent"
+  );
 
   const visibleComplaints = staffView
     ? complaints
@@ -56,6 +71,30 @@ export default function DashboardPage() {
 
   const dutyPreview = staffView ? staffDuties : memberDuties;
 
+  const resolvedComplaintsCount = visibleComplaints.filter(
+    (complaint) => complaint.status === "Resolved"
+  ).length;
+  const complaintResolutionRate = visibleComplaints.length
+    ? resolvedComplaintsCount / visibleComplaints.length
+    : 1;
+  const complaintGrade: "A" | "B" | "C" | "D" =
+    complaintResolutionRate >= 0.9
+      ? "A"
+      : complaintResolutionRate >= 0.75
+      ? "B"
+      : complaintResolutionRate >= 0.6
+      ? "C"
+      : "D";
+
+  const passGrade: "A" | "B" | "C" | "D" =
+    activePasses.length <= 10
+      ? "A"
+      : activePasses.length <= 20
+      ? "B"
+      : activePasses.length <= 30
+      ? "C"
+      : "D";
+
   return (
     <div className="container mx-auto px-0">
       <PageHeader
@@ -77,8 +116,8 @@ export default function DashboardPage() {
             <AnimatedCard>
               <Card className="h-full">
                 <CardHeader>
-                  <CardTitle>Complaints</CardTitle>
-                  <CardDescription>Recent submissions</CardDescription>
+                  <CardTitle>Dashboard Complaints</CardTitle>
+                  <CardDescription>Recent submissions in the last 2 days</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
                   {complaintPreview.length ? (
@@ -91,6 +130,29 @@ export default function DashboardPage() {
                   ) : (
                     <div className="text-muted-foreground">No complaints yet.</div>
                   )}
+                </CardContent>
+              </Card>
+            </AnimatedCard>
+
+            <AnimatedCard>
+              <Card className="h-full">
+                <CardHeader>
+                  <CardTitle>Grades</CardTitle>
+                  <CardDescription>Pass and complaint performance</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between rounded-md border p-2">
+                    <span>Passes</span>
+                    <span className={`text-lg font-semibold ${gradeColor[passGrade]}`}>
+                      {passGrade}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border p-2">
+                    <span>Complaints</span>
+                    <span className={`text-lg font-semibold ${gradeColor[complaintGrade]}`}>
+                      {complaintGrade}
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
             </AnimatedCard>
@@ -131,8 +193,10 @@ export default function DashboardPage() {
           <AnimatedCard>
             <Card>
               <CardHeader>
-                <CardTitle>Active Pass List</CardTitle>
-                <CardDescription>Full list of all currently active passes.</CardDescription>
+                <CardTitle>Active Passes</CardTitle>
+                <CardDescription>
+                  Temporary active passes with remaining time.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {activePasses.length ? (
@@ -151,14 +215,59 @@ export default function DashboardPage() {
                           </p>
                         </div>
                         <div className="grid gap-1 text-xs text-muted-foreground sm:text-right">
-                          <span>Issued: {format(new Date(pass.issuedAt), "p")}</span>
-                          <span>Expires: {format(new Date(pass.expiresAt), "p")}</span>
+                          <span>Issued: {format(new Date(pass.issuedAt), "PP p")}</span>
+                          <span>Expires: {format(new Date(pass.expiresAt), "PP p")}</span>
+                          <span>
+                            Remaining:{" "}
+                            {pass.expiresAt > now
+                              ? `${formatDistanceToNowStrict(new Date(pass.expiresAt))} left`
+                              : "expired"}
+                          </span>
                         </div>
                       </div>
                     </div>
                   ))
                 ) : (
                   <div className="text-sm text-muted-foreground">No active passes.</div>
+                )}
+              </CardContent>
+            </Card>
+          </AnimatedCard>
+
+          <AnimatedCard>
+            <Card>
+              <CardHeader>
+                <CardTitle>Permanent Passes</CardTitle>
+                <CardDescription>
+                  Permanent passes stay here until deleted.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {permanentPasses.length ? (
+                  permanentPasses.map((pass) => (
+                    <div key={pass.id} className="rounded-md border p-3">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-medium">{pass.studentName}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {pass.permissionLocation ?? "Canteen"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground break-words">
+                            {pass.reason}
+                          </p>
+                        </div>
+                        <div className="grid gap-1 text-xs text-muted-foreground sm:text-right">
+                          <span>Issued: {format(new Date(pass.issuedAt), "PP p")}</span>
+                          <span>Expires: No expiry</span>
+                          <span>Status: Until deleted</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-sm text-muted-foreground">No permanent passes.</div>
                 )}
               </CardContent>
             </Card>

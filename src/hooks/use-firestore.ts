@@ -707,6 +707,18 @@ export const updatePassStatus = async (
   });
 };
 
+export const deletePass = async (passId: string, actorId?: string) => {
+  const ref = docRefs.pass(passId);
+  if (!ref) throw new Error("Firestore not configured");
+  await deleteDoc(ref);
+  await logAction({
+    userId: actorId ?? "system",
+    action: "pass_deleted",
+    entityType: "pass",
+    entityId: passId,
+  });
+};
+
 export const createBreak = async (breakItem: Omit<Break, "id">, actorId?: string) => {
   await assertBreakManagerActor(actorId);
   const col = collections.breaks();

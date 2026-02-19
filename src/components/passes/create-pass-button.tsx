@@ -22,6 +22,7 @@ import {
 
 const DEFAULT_PERMISSION_LOCATION = "Canteen";
 const DEFAULT_DURATION_MINUTES = "10";
+const PERMANENT_EXPIRY_MS = Date.UTC(2099, 11, 31, 23, 59, 59);
 
 export function CreatePassButton() {
   const { isBreakActive, activeBreak } = useBreakStatus();
@@ -31,7 +32,7 @@ export function CreatePassButton() {
   const [studentGender, setStudentGender] = useState<"male" | "female" | "">("");
   const [permissionLocation, setPermissionLocation] = useState(DEFAULT_PERMISSION_LOCATION);
   const [reason, setReason] = useState("");
-  const [durationMode, setDurationMode] = useState<"end_of_break" | "specific">(
+  const [durationMode, setDurationMode] = useState<"end_of_break" | "specific" | "permanent">(
     "specific"
   );
   const [durationMinutes, setDurationMinutes] = useState(DEFAULT_DURATION_MINUTES);
@@ -80,6 +81,8 @@ export function CreatePassButton() {
       const expiresAt =
         durationMode === "end_of_break" && activeBreak
           ? activeBreak.endTime
+          : durationMode === "permanent"
+          ? PERMANENT_EXPIRY_MS
           : Date.now() + duration * 60 * 1000;
       await createPass(
         {
@@ -90,7 +93,12 @@ export function CreatePassButton() {
           issuedBy: user.name,
           issuedById: user.uid,
           expiresAt,
-          passType: durationMode === "end_of_break" ? "active_break" : "time_specified",
+          passType:
+            durationMode === "end_of_break"
+              ? "active_break"
+              : durationMode === "permanent"
+              ? "permanent"
+              : "time_specified",
           ...(durationMode === "specific" ? { durationMinutes: duration } : {}),
         },
         user.uid
@@ -139,6 +147,8 @@ export function CreatePassButton() {
           ? isBreakActive
             ? `This pass will be valid for the rest of the ${activeBreak?.name?.toLowerCase()}.`
             : "Break-end passes require a live break window."
+          : durationMode === "permanent"
+          ? "Permanent passes stay active until deleted."
           : "Configure the duration for this pass."
       }
       contentClassName="sm:max-w-[425px]"
@@ -181,13 +191,16 @@ export function CreatePassButton() {
           </Label>
           <Select
             value={durationMode}
-            onValueChange={(value) => setDurationMode(value as any)}
+            onValueChange={(value) =>
+              setDurationMode(value as "end_of_break" | "specific" | "permanent")
+            }
           >
             <SelectTrigger id="pass-duration" className="sm:col-span-3">
               <SelectValue placeholder="Select duration" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="end_of_break">Until end of break</SelectItem>
+              <SelectItem value="permanent">Permanent (until deleted)</SelectItem>
               <SelectItem value="specific">Specific duration</SelectItem>
             </SelectContent>
           </Select>

@@ -29,7 +29,7 @@ export type Pass = {
   issuedAt: number; // Unix timestamp
   expiresAt: number; // Unix timestamp
   status: 'active' | 'expired' | 'revoked';
-  passType?: 'active_break' | 'time_specified' | 'override';
+  passType?: 'active_break' | 'time_specified' | 'override' | 'permanent';
   durationMinutes?: number;
   override?: boolean;
 };

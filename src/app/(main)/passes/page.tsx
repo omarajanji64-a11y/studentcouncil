@@ -23,12 +23,13 @@ import {
 } from "@/components/ui/table";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, File, ListFilter, MoreHorizontal } from "lucide-react";
-import { useActivePasses, updatePassStatus } from "@/hooks/use-firestore";
-import { format } from "date-fns";
+import { deletePass, useActivePasses, updatePassStatus } from "@/hooks/use-firestore";
+import { format, formatDistanceToNowStrict } from "date-fns";
 import { easing, durations } from "@/lib/animations";
 import { useEffect, useRef, useState } from "react";
 import { useAuth, useRequireAuth } from "@/hooks/use-auth";
 import { isStaff } from "@/lib/permissions";
+import type { Pass } from "@/lib/types";
 
 export default function ActivePassesPage() {
   useRequireAuth();
@@ -40,6 +41,23 @@ export default function ActivePassesPage() {
   const prevIdsRef = useRef<Set<string>>(new Set());
   const { user } = useAuth();
   const canManage = isStaff(user);
+
+  const getPassTypeLabel = (passType?: string) => {
+    if (passType === "permanent") return "permanent";
+    return passType?.replace(/_/g, " ") ?? "active break";
+  };
+
+  const getRemainingLabel = (pass: Pass) => {
+    if (pass.passType === "permanent") return "until deleted";
+    const expiresAt = pass.expiresAt;
+    if (expiresAt <= Date.now()) return "expired";
+    return `${formatDistanceToNowStrict(new Date(expiresAt))} left`;
+  };
+
+  const getExpiresLabel = (pass: Pass) => {
+    if (pass.passType === "permanent") return "No expiry";
+    return format(new Date(pass.expiresAt), "PP p");
+  };
 
   useEffect(() => {
     const current = new Set(activePasses.map((pass) => pass.id));
@@ -140,12 +158,21 @@ export default function ActivePassesPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem>View Details</DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                            onClick={() => updatePassStatus(pass.id, "revoked", user?.uid)}
-                          >
-                            Revoke Pass
-                          </DropdownMenuItem>
+                          {pass.passType === "permanent" ? (
+                            <DropdownMenuItem
+                              className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                              onClick={() => deletePass(pass.id, user?.uid)}
+                            >
+                              Delete Pass
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                              onClick={() => updatePassStatus(pass.id, "revoked", user?.uid)}
+                            >
+                              Revoke Pass
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     ) : null}
@@ -153,11 +180,15 @@ export default function ActivePassesPage() {
                   <div className="grid gap-2 text-xs text-muted-foreground">
                     <div className="flex items-center justify-between">
                       <span>Issued</span>
-                      <span>{format(new Date(pass.issuedAt), "p")}</span>
+                      <span>{format(new Date(pass.issuedAt), "PP p")}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Expires</span>
-                      <span>{format(new Date(pass.expiresAt), "p")}</span>
+                      <span>{getExpiresLabel(pass)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Remaining</span>
+                      <span>{getRemainingLabel(pass)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Issued By</span>
@@ -262,7 +293,7 @@ export default function ActivePassesPage() {
                           </div>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell text-muted-foreground">
-                          {pass.passType?.replace(/_/g, " ") ?? "active break"}
+                          {getPassTypeLabel(pass.passType)}
                         </TableCell>
                         <TableCell className="hidden lg:table-cell text-muted-foreground">
                           {pass.reason}
@@ -271,10 +302,15 @@ export default function ActivePassesPage() {
                           {pass.issuedBy}
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
-                          {format(new Date(pass.issuedAt), "p")}
+                          {format(new Date(pass.issuedAt), "PP p")}
                         </TableCell>
                         <TableCell className="text-right">
-                          {format(new Date(pass.expiresAt), "p")}
+                          <div className="space-y-0.5">
+                            <div>{getExpiresLabel(pass)}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {getRemainingLabel(pass)}
+                            </div>
+                          </div>
                         </TableCell>
                         {canManage ? (
                           <TableCell>
@@ -287,12 +323,21 @@ export default function ActivePassesPage() {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem>View Details</DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                                  onClick={() => updatePassStatus(pass.id, "revoked", user?.uid)}
-                                >
-                                  Revoke Pass
-                                </DropdownMenuItem>
+                                {pass.passType === "permanent" ? (
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                                    onClick={() => deletePass(pass.id, user?.uid)}
+                                  >
+                                    Delete Pass
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                                    onClick={() => updatePassStatus(pass.id, "revoked", user?.uid)}
+                                  >
+                                    Revoke Pass
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
