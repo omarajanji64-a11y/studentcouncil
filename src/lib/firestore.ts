@@ -64,6 +64,7 @@ export const converters = {
         id: snap.id,
         studentName: data.studentName ?? "",
         studentGender: data.studentGender ?? undefined,
+        studentGrade: data.studentGrade ?? undefined,
         permissionLocation: data.permissionLocation ?? undefined,
         reason: data.reason ?? "",
         issuedBy: data.issuedBy ?? "",

@@ -30,6 +30,7 @@ export function CreatePassButton() {
   const [isCreating, setIsCreating] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [studentGender, setStudentGender] = useState<"male" | "female" | "">("");
+  const [studentGrade, setStudentGrade] = useState("");
   const [permissionLocation, setPermissionLocation] = useState(DEFAULT_PERMISSION_LOCATION);
   const [reason, setReason] = useState("");
   const [durationMode, setDurationMode] = useState<"end_of_break" | "specific" | "permanent">(
@@ -41,6 +42,7 @@ export function CreatePassButton() {
   const resetForm = () => {
     setStudentName("");
     setStudentGender("");
+    setStudentGrade("");
     setPermissionLocation(DEFAULT_PERMISSION_LOCATION);
     setReason("");
     setDurationMode("specific");
@@ -49,11 +51,11 @@ export function CreatePassButton() {
 
   const handleCreatePass = async () => {
     if (!user) return;
-    if (!studentName || !reason || !permissionLocation.trim()) {
+    if (!studentName || !studentGrade.trim() || !reason || !permissionLocation.trim()) {
       toast({
         variant: "destructive",
         title: "Missing fields",
-        description: "Student name, permission location, and reason are required.",
+        description: "Student name, grade, permission location, and reason are required.",
       });
       return;
     }
@@ -88,6 +90,7 @@ export function CreatePassButton() {
         {
           studentName,
           studentGender,
+          studentGrade: studentGrade.trim(),
           permissionLocation: permissionLocation.trim(),
           reason,
           issuedBy: user.name,
@@ -215,6 +218,18 @@ export function CreatePassButton() {
             className="sm:col-span-3"
             value={studentName}
             onChange={(event) => setStudentName(event.target.value)}
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+          <Label htmlFor="pass-grade" className="sm:text-right">
+            Grade
+          </Label>
+          <Input
+            id="pass-grade"
+            placeholder="e.g., 10A"
+            className="sm:col-span-3"
+            value={studentGrade}
+            onChange={(event) => setStudentGrade(event.target.value)}
           />
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">

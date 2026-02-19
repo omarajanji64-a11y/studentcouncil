@@ -25,6 +25,7 @@ export function OverridePassButton() {
   const [isCreating, setIsCreating] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [studentGender, setStudentGender] = useState<"male" | "female" | "">("");
+  const [studentGrade, setStudentGrade] = useState("");
   const [permissionLocation, setPermissionLocation] = useState("Canteen");
   const [reason, setReason] = useState("");
   const [durationMode, setDurationMode] = useState<"end_of_break" | "specific">(
@@ -37,6 +38,7 @@ export function OverridePassButton() {
   const resetForm = () => {
     setStudentName("");
     setStudentGender("");
+    setStudentGrade("");
     setPermissionLocation("Canteen");
     setReason("");
     setDurationMinutes("10");
@@ -47,11 +49,11 @@ export function OverridePassButton() {
 
   const handleOverride = async () => {
     if (!user) return;
-    if (!studentName || !reason || !permissionLocation.trim()) {
+    if (!studentName || !studentGrade.trim() || !reason || !permissionLocation.trim()) {
       toast({
         variant: "destructive",
         title: "Missing fields",
-        description: "Student name, permission location, and reason are required.",
+        description: "Student name, grade, permission location, and reason are required.",
       });
       return;
     }
@@ -83,6 +85,7 @@ export function OverridePassButton() {
         {
           studentName,
           studentGender,
+          studentGrade: studentGrade.trim(),
           permissionLocation: permissionLocation.trim(),
           reason,
           issuedBy: user.name,
@@ -190,12 +193,24 @@ export function OverridePassButton() {
           </div>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+          <Label htmlFor="override-grade" className="sm:text-right">
+            Grade
+          </Label>
+          <Input
+            id="override-grade"
+            placeholder="e.g., 10A"
+            className="sm:col-span-3"
+            value={studentGrade}
+            onChange={(event) => setStudentGrade(event.target.value)}
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
           <Label htmlFor="override-duration" className="sm:text-right">
             Duration
           </Label>
           <Select
             value={durationMode}
-            onValueChange={(value) => setDurationMode(value as any)}
+            onValueChange={(value) => setDurationMode(value as "end_of_break" | "specific")}
           >
             <SelectTrigger id="override-duration" className="sm:col-span-3">
               <SelectValue placeholder="Select duration" />

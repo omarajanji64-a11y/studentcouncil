@@ -684,6 +684,7 @@ export const createPass = async (
     entityId: passRef.id,
     details: {
       studentName: pass.studentName,
+      studentGrade: pass.studentGrade ?? null,
       passType: pass.passType ?? "active_break",
       override: pass.override ?? false,
     },

@@ -136,6 +136,9 @@ export default function ActivePassesPage() {
                       <div className="flex flex-wrap items-center gap-2 text-base font-semibold">
                         {pass.studentName}
                         <span className="text-xs font-normal text-muted-foreground">
+                          Grade {pass.studentGrade ?? "N/A"}
+                        </span>
+                        <span className="text-xs font-normal text-muted-foreground">
                           {pass.permissionLocation ?? "Canteen"}
                         </span>
                         {isRecent ? (
@@ -288,7 +291,7 @@ export default function ActivePassesPage() {
                               </AnimatePresence>
                             </div>
                             <div className="text-xs font-normal text-muted-foreground">
-                              {pass.permissionLocation ?? "Canteen"}
+                              Grade {pass.studentGrade ?? "N/A"} - {pass.permissionLocation ?? "Canteen"}
                             </div>
                           </div>
                         </TableCell>

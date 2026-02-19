@@ -20,13 +20,6 @@ import { useMemo } from "react";
 
 const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
 
-const gradeColor: Record<"A" | "B" | "C" | "D", string> = {
-  A: "text-emerald-600",
-  B: "text-amber-600",
-  C: "text-orange-600",
-  D: "text-red-600",
-};
-
 export default function DashboardPage() {
   const { user } = useAuth();
   const { breaks } = useBreaksData();
@@ -82,30 +75,6 @@ export default function DashboardPage() {
 
   const dutyPreview = staffView ? staffDuties : memberDuties;
 
-  const resolvedComplaintsCount = visibleComplaints.filter(
-    (complaint) => complaint.status === "Resolved"
-  ).length;
-  const complaintResolutionRate = visibleComplaints.length
-    ? resolvedComplaintsCount / visibleComplaints.length
-    : 1;
-  const complaintGrade: "A" | "B" | "C" | "D" =
-    complaintResolutionRate >= 0.9
-      ? "A"
-      : complaintResolutionRate >= 0.75
-      ? "B"
-      : complaintResolutionRate >= 0.6
-      ? "C"
-      : "D";
-
-  const passGrade: "A" | "B" | "C" | "D" =
-    activePasses.length <= 10
-      ? "A"
-      : activePasses.length <= 20
-      ? "B"
-      : activePasses.length <= 30
-      ? "C"
-      : "D";
-
   return (
     <div className="container mx-auto px-0">
       <PageHeader
@@ -141,29 +110,6 @@ export default function DashboardPage() {
                   ) : (
                     <div className="text-muted-foreground">No complaints yet.</div>
                   )}
-                </CardContent>
-              </Card>
-            </AnimatedCard>
-
-            <AnimatedCard>
-              <Card className="h-full">
-                <CardHeader>
-                  <CardTitle>Grades</CardTitle>
-                  <CardDescription>Pass and complaint performance</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between rounded-md border p-2">
-                    <span>Passes</span>
-                    <span className={`text-lg font-semibold ${gradeColor[passGrade]}`}>
-                      {passGrade}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-md border p-2">
-                    <span>Complaints</span>
-                    <span className={`text-lg font-semibold ${gradeColor[complaintGrade]}`}>
-                      {complaintGrade}
-                    </span>
-                  </div>
                 </CardContent>
               </Card>
             </AnimatedCard>
@@ -218,6 +164,9 @@ export default function DashboardPage() {
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="font-medium">{pass.studentName}</span>
                             <span className="text-xs text-muted-foreground">
+                              Grade {pass.studentGrade ?? "N/A"}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
                               {pass.permissionLocation ?? "Canteen"}
                             </span>
                           </div>
@@ -261,6 +210,9 @@ export default function DashboardPage() {
                         <div className="min-w-0 space-y-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="font-medium">{pass.studentName}</span>
+                            <span className="text-xs text-muted-foreground">
+                              Grade {pass.studentGrade ?? "N/A"}
+                            </span>
                             <span className="text-xs text-muted-foreground">
                               {pass.permissionLocation ?? "Canteen"}
                             </span>
