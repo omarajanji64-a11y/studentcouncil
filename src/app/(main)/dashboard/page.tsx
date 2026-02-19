@@ -12,6 +12,7 @@ import {
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { AnimatedList } from "@/components/motion/animated-list";
 import { useAuth } from "@/hooks/use-auth";
+import { useBreaksData } from "@/hooks/use-break-status";
 import { isStaff } from "@/lib/permissions";
 import { useActivePasses, useComplaints, useDuties } from "@/hooks/use-firestore";
 import { format, formatDistanceToNowStrict } from "date-fns";
@@ -28,6 +29,7 @@ const gradeColor: Record<"A" | "B" | "C" | "D", string> = {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { breaks } = useBreaksData();
   const staffView = isStaff(user);
   const sinceMs = useMemo(() => Date.now() - TWO_DAYS_MS, []);
   const { data: passes } = useActivePasses({ limit: 0 });
@@ -42,11 +44,21 @@ export default function DashboardPage() {
   const sortedActivePasses = passes
     .filter((pass) => pass.status === "active")
     .sort((a, b) => b.issuedAt - a.issuedAt);
+  const now = Date.now();
+  const lastTwoBreaks = breaks
+    .filter((breakItem) => breakItem.startTime <= now)
+    .sort((a, b) => b.startTime - a.startTime)
+    .slice(0, 2);
   const permanentPasses = sortedActivePasses.filter(
     (pass) => pass.passType === "permanent"
   );
   const activePasses = sortedActivePasses.filter(
-    (pass) => pass.passType !== "permanent"
+    (pass) =>
+      pass.passType !== "permanent" &&
+      lastTwoBreaks.some(
+        (breakItem) =>
+          pass.issuedAt >= breakItem.startTime && pass.issuedAt <= breakItem.endTime
+      )
   );
 
   const visibleComplaints = staffView
@@ -57,7 +69,6 @@ export default function DashboardPage() {
     .sort((a, b) => b.timestamp - a.timestamp)
     .slice(0, 3);
 
-  const now = Date.now();
   const memberDuties = duties
     .filter((duty) => duty.memberIds.includes(user?.uid ?? ""))
     .sort((a, b) => a.startTime - b.startTime)
@@ -195,7 +206,7 @@ export default function DashboardPage() {
               <CardHeader>
                 <CardTitle>Active Passes</CardTitle>
                 <CardDescription>
-                  Temporary active passes with remaining time.
+                  Temporary active passes from the last 2 breaks.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
