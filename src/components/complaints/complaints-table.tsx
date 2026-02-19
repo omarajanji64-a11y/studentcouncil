@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,11 +62,45 @@ export function ComplaintsTable({
   const [gallery, setGallery] = useState<Complaint | null>(null);
   const [detailComplaint, setDetailComplaint] = useState<Complaint | null>(null);
 
-  const dutyLabel = useMemo(() => {
-    const map = new Map<string, string>();
-    duties.forEach((duty) => map.set(duty.id, duty.title));
+  const dutyLookup = useMemo(() => {
+    const map = new Map<string, Duty>();
+    duties.forEach((duty) => map.set(duty.id, duty));
     return map;
   }, [duties]);
+
+  const resolveDutyInfo = useCallback(
+    (complaint: Complaint) => {
+      const linkedDuty = complaint.dutyId ? dutyLookup.get(complaint.dutyId) : undefined;
+      if (linkedDuty) {
+        return {
+          dutyId: linkedDuty.id,
+          dutyTitle: linkedDuty.title,
+          dutyLocation: complaint.dutyLocation ?? linkedDuty.location ?? null,
+        };
+      }
+
+      const inferredDuty = duties.find(
+        (duty) =>
+          complaint.timestamp >= duty.startTime &&
+          complaint.timestamp <= duty.endTime &&
+          duty.memberIds?.includes(complaint.studentId)
+      );
+      if (inferredDuty) {
+        return {
+          dutyId: inferredDuty.id,
+          dutyTitle: inferredDuty.title,
+          dutyLocation: complaint.dutyLocation ?? inferredDuty.location ?? null,
+        };
+      }
+
+      return {
+        dutyId: complaint.dutyId ?? null,
+        dutyTitle: complaint.dutyId ? "Unknown" : null,
+        dutyLocation: complaint.dutyLocation ?? null,
+      };
+    },
+    [dutyLookup, duties]
+  );
 
   const effectiveFilter = searchValue ?? filter;
   const showAdvancedFilters = !serverSide && !!staffView;
@@ -96,9 +130,10 @@ export function ComplaintsTable({
       );
     }
     if (!serverSide && dutyFilter.length) {
-      filteredData = filteredData.filter((complaint) =>
-        complaint.dutyId ? dutyFilter.includes(complaint.dutyId) : false
-      );
+      filteredData = filteredData.filter((complaint) => {
+        const resolvedDutyId = resolveDutyInfo(complaint).dutyId;
+        return resolvedDutyId ? dutyFilter.includes(resolvedDutyId) : false;
+      });
     }
     if (!serverSide && startDate) {
       const start = new Date(startDate).getTime();
@@ -118,6 +153,7 @@ export function ComplaintsTable({
     endDate,
     serverSide,
     user,
+    resolveDutyInfo,
   ]);
 
   const openEditor = (complaint: Complaint) => {
@@ -128,6 +164,8 @@ export function ComplaintsTable({
   const openDetails = (complaint: Complaint) => {
     setDetailComplaint(complaint);
   };
+
+  const detailDutyInfo = detailComplaint ? resolveDutyInfo(detailComplaint) : null;
 
   const handleUpdate = async () => {
     if (!activeComplaint || !user || !staffView) return;
@@ -260,6 +298,7 @@ export function ComplaintsTable({
                 ? complaint.studentName ?? complaint.studentId
                 : "Hidden";
             const targetLabel = complaint.targetName ?? complaint.title;
+            const dutyInfo = resolveDutyInfo(complaint);
             return (
               <Card
                 key={complaint.id}
@@ -280,13 +319,11 @@ export function ComplaintsTable({
                   <div className="grid gap-2 text-xs text-muted-foreground">
                     <div className="flex items-center justify-between">
                       <span>Duty</span>
-                      <span>
-                        {complaint.dutyId ? dutyLabel.get(complaint.dutyId) ?? "Unknown" : "N/A"}
-                      </span>
+                      <span>{dutyInfo.dutyTitle ?? "N/A"}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Location</span>
-                      <span>{complaint.dutyLocation ?? "N/A"}</span>
+                      <span>{dutyInfo.dutyLocation ?? "N/A"}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Submitted</span>
@@ -344,47 +381,50 @@ export function ComplaintsTable({
                 </TableCell>
               </TableRow>
             ) : filtered.length ? (
-              filtered.map((complaint) => (
-                <TableRow
-                  key={complaint.id}
-                  onDoubleClick={staffView ? () => openDetails(complaint) : undefined}
-                  className={staffView ? "cursor-zoom-in" : undefined}
-                >
-                  <TableCell className="font-medium">
-                    {complaint.targetType === "group" && complaint.groupName
-                      ? complaint.groupName
-                      : isSupervisor(user)
-                      ? complaint.studentName ?? complaint.studentId
-                      : "Hidden"}
-                  </TableCell>
-                  <TableCell>{complaint.targetName ?? complaint.title}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {complaint.dutyId ? dutyLabel.get(complaint.dutyId) ?? "Unknown" : "N/A"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {complaint.dutyLocation ?? "N/A"}
-                  </TableCell>
-                  <TableCell>{complaint.status}</TableCell>
-                  <TableCell>{format(new Date(complaint.timestamp), "PPp")}</TableCell>
-                  <TableCell>
-                    {complaint.attachments?.length ? (
-                      <Button size="sm" variant="outline" onClick={() => setGallery(complaint)}>
-                        View ({complaint.attachments.length})
-                      </Button>
-                    ) : (
-                      "None"
-                    )}
-                  </TableCell>
-                  {staffView ? <TableCell>{complaint.handledBy ?? "N/A"}</TableCell> : null}
-                  {staffView ? (
-                    <TableCell>
-                      <Button size="sm" variant="outline" onClick={() => openEditor(complaint)}>
-                        Update
-                      </Button>
+              filtered.map((complaint) => {
+                const dutyInfo = resolveDutyInfo(complaint);
+                return (
+                  <TableRow
+                    key={complaint.id}
+                    onDoubleClick={staffView ? () => openDetails(complaint) : undefined}
+                    className={staffView ? "cursor-zoom-in" : undefined}
+                  >
+                    <TableCell className="font-medium">
+                      {complaint.targetType === "group" && complaint.groupName
+                        ? complaint.groupName
+                        : isSupervisor(user)
+                        ? complaint.studentName ?? complaint.studentId
+                        : "Hidden"}
                     </TableCell>
-                  ) : null}
-                </TableRow>
-              ))
+                    <TableCell>{complaint.targetName ?? complaint.title}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {dutyInfo.dutyTitle ?? "N/A"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {dutyInfo.dutyLocation ?? "N/A"}
+                    </TableCell>
+                    <TableCell>{complaint.status}</TableCell>
+                    <TableCell>{format(new Date(complaint.timestamp), "PPp")}</TableCell>
+                    <TableCell>
+                      {complaint.attachments?.length ? (
+                        <Button size="sm" variant="outline" onClick={() => setGallery(complaint)}>
+                          View ({complaint.attachments.length})
+                        </Button>
+                      ) : (
+                        "None"
+                      )}
+                    </TableCell>
+                    {staffView ? <TableCell>{complaint.handledBy ?? "N/A"}</TableCell> : null}
+                    {staffView ? (
+                      <TableCell>
+                        <Button size="sm" variant="outline" onClick={() => openEditor(complaint)}>
+                          Update
+                        </Button>
+                      </TableCell>
+                    ) : null}
+                  </TableRow>
+                );
+              })
             ) : (
               <TableRow>
                 <TableCell colSpan={staffView ? 9 : 7} className="h-24 text-center">
@@ -449,14 +489,12 @@ export function ComplaintsTable({
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Duty</span>
                 <span className="font-medium">
-                  {detailComplaint.dutyId
-                    ? dutyLabel.get(detailComplaint.dutyId) ?? "Unknown"
-                    : "N/A"}
+                  {detailDutyInfo?.dutyTitle ?? "N/A"}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Location</span>
-                <span className="font-medium">{detailComplaint.dutyLocation ?? "N/A"}</span>
+                <span className="font-medium">{detailDutyInfo?.dutyLocation ?? "N/A"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Status</span>

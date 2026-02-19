@@ -824,10 +824,21 @@ export const createComplaint = async (
 ) => {
   const col = collections.complaints();
   if (!col) throw new Error("Firestore not configured");
+  let dutyLocation = complaint.dutyLocation ?? null;
+  if (!dutyLocation && complaint.dutyId) {
+    const dutyRef = docRefs.duty(complaint.dutyId);
+    if (dutyRef) {
+      const dutySnapshot = await getDoc(dutyRef);
+      if (dutySnapshot.exists()) {
+        dutyLocation = dutySnapshot.data()?.location ?? null;
+      }
+    }
+  }
   const targetName = (complaint.title ?? "").trim();
   const targetNameLower = targetName.toLowerCase();
   const ref = await addDoc(col, {
     ...complaint,
+    dutyLocation,
     targetName,
     targetNameLower,
     status: complaint.status ?? "Open",
@@ -843,7 +854,7 @@ export const createComplaint = async (
       dutyId: complaint.dutyId ?? null,
       studentId: complaint.studentId,
       studentName: complaint.studentName ?? null,
-      dutyLocation: complaint.dutyLocation ?? null,
+      dutyLocation,
     },
   });
   return ref.id;

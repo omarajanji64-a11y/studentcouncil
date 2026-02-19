@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ export function ComplaintForm() {
   const [targetGender, setTargetGender] = useState<"male" | "female" | "">("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [selectedDutyId, setSelectedDutyId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const activeDuty = useMemo(() => {
@@ -30,6 +31,25 @@ export function ComplaintForm() {
       ) ?? null
     );
   }, [duties, user]);
+
+  const dutyOptions = useMemo(() => {
+    if (!user) return duties;
+    const assigned = duties.filter((duty) => duty.memberIds?.includes(user.uid));
+    return assigned.length ? assigned : duties;
+  }, [duties, user]);
+
+  useEffect(() => {
+    setSelectedDutyId((current) => {
+      if (activeDuty && current === "") return activeDuty.id;
+      if (current && dutyOptions.some((duty) => duty.id === current)) return current;
+      return dutyOptions[0]?.id ?? "";
+    });
+  }, [activeDuty, dutyOptions]);
+
+  const selectedDuty = useMemo(
+    () => dutyOptions.find((duty) => duty.id === selectedDutyId) ?? null,
+    [dutyOptions, selectedDutyId]
+  );
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -49,6 +69,14 @@ export function ComplaintForm() {
       });
       return;
     }
+    if (!selectedDuty) {
+      toast({
+        variant: "destructive",
+        title: "Missing duty",
+        description: "Select your duty before submitting the complaint.",
+      });
+      return;
+    }
     setIsSubmitting(true);
     try {
       await createComplaint(
@@ -56,8 +84,8 @@ export function ComplaintForm() {
           studentId: user.uid,
           studentName: user.name,
           targetGender,
-          dutyId: activeDuty?.id ?? null,
-          dutyLocation: activeDuty?.location ?? null,
+          dutyId: selectedDuty.id,
+          dutyLocation: selectedDuty.location ?? null,
           title,
           description,
         },
@@ -66,6 +94,7 @@ export function ComplaintForm() {
       setTitle("");
       setDescription("");
       setTargetGender("");
+      setSelectedDutyId(activeDuty?.id ?? selectedDuty.id);
       toast({
         title: "Complaint submitted",
         description: "Your complaint has been recorded.",
@@ -90,7 +119,7 @@ export function ComplaintForm() {
       <CardHeader>
         <CardTitle>Submit a Complaint</CardTitle>
         <CardDescription>
-          Logged with your account and linked to the active duty.
+          Logged with your account and linked to your selected duty.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
@@ -108,6 +137,30 @@ export function ComplaintForm() {
             <option value="male">Boy</option>
             <option value="female">Girl</option>
           </select>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="complaint-duty">Duty</Label>
+          <select
+            id="complaint-duty"
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            value={selectedDutyId}
+            onChange={(event) => setSelectedDutyId(event.target.value)}
+          >
+            <option value="">
+              {dutyOptions.length ? "Select duty" : "No duty available"}
+            </option>
+            {dutyOptions.map((duty) => (
+              <option key={duty.id} value={duty.id}>
+                {duty.title}
+                {duty.location ? ` - ${duty.location}` : ""}
+              </option>
+            ))}
+          </select>
+          <div className="text-xs text-muted-foreground">
+            {activeDuty
+              ? `Active now: ${activeDuty.location ?? activeDuty.title}`
+              : "No active duty right now."}
+          </div>
         </div>
         <div className="grid gap-2">
           <Label htmlFor="complaint-title">Student Name</Label>
@@ -130,7 +183,7 @@ export function ComplaintForm() {
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>Student ID: {user?.uid ?? "N/A"}</span>
           <span>
-            Duty: {activeDuty?.location ?? activeDuty?.title ?? "No active duty"}
+            Duty: {selectedDuty?.location ?? selectedDuty?.title ?? "Not selected"}
           </span>
         </div>
         <Button onClick={handleSubmit} disabled={isSubmitting}>
