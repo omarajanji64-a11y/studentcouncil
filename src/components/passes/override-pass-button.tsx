@@ -49,11 +49,11 @@ export function OverridePassButton() {
 
   const handleOverride = async () => {
     if (!user) return;
-    if (!studentName || !studentGrade.trim() || !reason || !permissionLocation.trim()) {
+    if (!studentName || !studentGrade.trim() || !permissionLocation.trim()) {
       toast({
         variant: "destructive",
         title: "Missing fields",
-        description: "Student name, grade, permission location, and reason are required.",
+        description: "Student name, grade, and permission location are required.",
       });
       return;
     }
@@ -239,7 +239,7 @@ export function OverridePassButton() {
           </Label>
           <Input
             id="override-reason"
-            placeholder="Required"
+            placeholder="Optional"
             className="sm:col-span-3"
             value={reason}
             onChange={(event) => setReason(event.target.value)}
