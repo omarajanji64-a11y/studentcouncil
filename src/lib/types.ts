@@ -14,8 +14,8 @@ export type User = {
 export type Break = {
   id: string;
   name: string;
-  startTime: number; // Unix timestamp
-  endTime: number; // Unix timestamp
+  startTime: number; // Daily schedule time stored as a timestamp
+  endTime: number; // Daily schedule time stored as a timestamp
 };
 
 export type Pass = {

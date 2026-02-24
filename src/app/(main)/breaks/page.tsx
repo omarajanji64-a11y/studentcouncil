@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { MoreHorizontal, PlusCircle, X } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
@@ -33,6 +33,11 @@ import {
   deleteBreak,
   updateBreak,
 } from "@/hooks/use-firestore";
+import {
+  compareBreakBySchedule,
+  isBreakActiveAt,
+  parseTimeInput,
+} from "@/lib/break-schedule";
 import { useBreaksData } from "@/hooks/use-break-status";
 import { useAuth, useRequireAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -43,18 +48,29 @@ export default function BreaksPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { breaks, loading, error } = useBreaksData();
-  const sortedBreaks = [...breaks].sort((a, b) => a.startTime - b.startTime);
+  const sortedBreaks = [...breaks].sort(compareBreakBySchedule);
   const [isOpen, setIsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [activeBreakId, setActiveBreakId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [now, setNow] = useState(() => Date.now());
   const canManageBreaks = isStaff(user);
 
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const getErrorMessage = (value: unknown, fallback: string) =>
+    value instanceof Error && value.message ? value.message : fallback;
+
   const isBreakActive = (b: Break) => {
-    const now = Date.now();
-    return now >= b.startTime && now < b.endTime;
+    return isBreakActiveAt(b, now);
   };
 
   const handleCreateBreak = async () => {
@@ -66,7 +82,7 @@ export default function BreaksPage() {
       });
       return;
     }
-    if (!name || !startTime || !endTime) {
+    if (!name.trim() || !startTime || !endTime) {
       toast({
         variant: "destructive",
         title: "Missing fields",
@@ -75,21 +91,32 @@ export default function BreaksPage() {
       return;
     }
 
-    const today = new Date();
-    const [startHour, startMinute] = startTime.split(":").map(Number);
-    const [endHour, endMinute] = endTime.split(":").map(Number);
+    const parsedStart = parseTimeInput(startTime);
+    const parsedEnd = parseTimeInput(endTime);
 
-    const start = new Date(today);
-    start.setHours(startHour, startMinute, 0, 0);
-    const end = new Date(today);
-    end.setHours(endHour, endMinute, 0, 0);
+    if (parsedStart === null || parsedEnd === null) {
+      toast({
+        variant: "destructive",
+        title: "Invalid time",
+        description: "Please provide valid start and end times.",
+      });
+      return;
+    }
+    if (parsedStart === parsedEnd) {
+      toast({
+        variant: "destructive",
+        title: "Invalid window",
+        description: "Start and end times must be different.",
+      });
+      return;
+    }
 
     try {
       await createBreak(
         {
-          name,
-          startTime: start.getTime(),
-          endTime: end.getTime(),
+          name: name.trim(),
+          startTime: parsedStart,
+          endTime: parsedEnd,
         },
         user?.uid
       );
@@ -106,7 +133,10 @@ export default function BreaksPage() {
       toast({
         variant: "destructive",
         title: "Break failed",
-        description: "Unable to create the break. Check permissions and try again.",
+        description: getErrorMessage(
+          err,
+          "Unable to create the break. Check permissions and try again."
+        ),
       });
     }
   };
@@ -128,28 +158,55 @@ export default function BreaksPage() {
       });
       return;
     }
+    if (!name.trim() || !startTime || !endTime) {
+      toast({
+        variant: "destructive",
+        title: "Missing fields",
+        description: "Please provide a name, start time, and end time.",
+      });
+      return;
+    }
     if (!activeBreakId) return;
-    const today = new Date();
-    const [startHour, startMinute] = startTime.split(":").map(Number);
-    const [endHour, endMinute] = endTime.split(":").map(Number);
-    const start = new Date(today);
-    start.setHours(startHour, startMinute, 0, 0);
-    const end = new Date(today);
-    end.setHours(endHour, endMinute, 0, 0);
-    await updateBreak(
-      activeBreakId,
-      { name, startTime: start.getTime(), endTime: end.getTime() },
-      user?.uid
-    );
-    setEditOpen(false);
-    setActiveBreakId(null);
-    setName("");
-    setStartTime("");
-    setEndTime("");
-    toast({
-      title: "Break updated",
-      description: "The break window has been updated.",
-    });
+    const parsedStart = parseTimeInput(startTime);
+    const parsedEnd = parseTimeInput(endTime);
+    if (parsedStart === null || parsedEnd === null) {
+      toast({
+        variant: "destructive",
+        title: "Invalid time",
+        description: "Please provide valid start and end times.",
+      });
+      return;
+    }
+    if (parsedStart === parsedEnd) {
+      toast({
+        variant: "destructive",
+        title: "Invalid window",
+        description: "Start and end times must be different.",
+      });
+      return;
+    }
+    try {
+      await updateBreak(
+        activeBreakId,
+        { name: name.trim(), startTime: parsedStart, endTime: parsedEnd },
+        user?.uid
+      );
+      setEditOpen(false);
+      setActiveBreakId(null);
+      setName("");
+      setStartTime("");
+      setEndTime("");
+      toast({
+        title: "Break updated",
+        description: "The break window has been updated.",
+      });
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: getErrorMessage(err, "Unable to update this break."),
+      });
+    }
   };
 
   const handleDeleteBreak = async (breakId: string) => {
@@ -161,11 +218,19 @@ export default function BreaksPage() {
       });
       return;
     }
-    await deleteBreak(breakId, user?.uid);
-    toast({
-      title: "Break deleted",
-      description: "The break has been removed.",
-    });
+    try {
+      await deleteBreak(breakId, user?.uid);
+      toast({
+        title: "Break deleted",
+        description: "The break has been removed.",
+      });
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Delete failed",
+        description: getErrorMessage(err, "Unable to delete this break."),
+      });
+    }
   };
 
   const renderBreaksTable = (showActions: boolean) => {
@@ -341,7 +406,15 @@ export default function BreaksPage() {
 
           <MotionModal
             open={editOpen}
-            onOpenChange={setEditOpen}
+            onOpenChange={(open) => {
+              setEditOpen(open);
+              if (!open) {
+                setActiveBreakId(null);
+                setName("");
+                setStartTime("");
+                setEndTime("");
+              }
+            }}
             title="Edit Break"
             description="Update the break name and time window."
             contentClassName="sm:max-w-[425px]"

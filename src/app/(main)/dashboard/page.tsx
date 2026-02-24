@@ -14,6 +14,7 @@ import { AnimatedList } from "@/components/motion/animated-list";
 import { useAuth } from "@/hooks/use-auth";
 import { useBreaksData } from "@/hooks/use-break-status";
 import { isStaff } from "@/lib/permissions";
+import { resolveMostRecentBreakWindow } from "@/lib/break-schedule";
 import { useActivePasses, useComplaints, useDuties } from "@/hooks/use-firestore";
 import { format, formatDistanceToNowStrict } from "date-fns";
 import { useMemo } from "react";
@@ -38,8 +39,8 @@ export default function DashboardPage() {
     .filter((pass) => pass.status === "active")
     .sort((a, b) => b.issuedAt - a.issuedAt);
   const now = Date.now();
-  const lastTwoBreaks = breaks
-    .filter((breakItem) => breakItem.startTime <= now)
+  const lastTwoBreakWindows = breaks
+    .map((breakItem) => resolveMostRecentBreakWindow(breakItem, now))
     .sort((a, b) => b.startTime - a.startTime)
     .slice(0, 2);
   const permanentPasses = sortedActivePasses.filter(
@@ -48,9 +49,9 @@ export default function DashboardPage() {
   const activePasses = sortedActivePasses.filter(
     (pass) =>
       pass.passType !== "permanent" &&
-      lastTwoBreaks.some(
-        (breakItem) =>
-          pass.issuedAt >= breakItem.startTime && pass.issuedAt <= breakItem.endTime
+      lastTwoBreakWindows.some(
+        (window) =>
+          pass.issuedAt >= window.startTime && pass.issuedAt <= window.endTime
       )
   );
 

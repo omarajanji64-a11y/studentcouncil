@@ -5,7 +5,11 @@ import type { ReactNode } from "react";
 import type { Break } from "@/lib/types";
 import { useBreaks } from "@/hooks/use-firestore";
 import { useAuth } from "@/hooks/use-auth";
-import { isStaff } from "@/lib/permissions";
+import {
+  compareBreakBySchedule,
+  isBreakActiveAt,
+  resolveBreakForReference,
+} from "@/lib/break-schedule";
 
 interface BreakStatus {
   activeBreak: Break | null;
@@ -24,8 +28,10 @@ const BreaksContext = createContext<BreaksContextValue | null>(null);
 
 export function BreaksProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const realtime = isStaff(user);
-  const { data: breaks, loading, error } = useBreaks({ enabled: !!user, realtime });
+  const { data: breaks, loading, error } = useBreaks({
+    enabled: !!user,
+    realtime: true,
+  });
   const value = useMemo(
     () => ({ breaks, loading, error }),
     [breaks, loading, error]
@@ -59,16 +65,16 @@ export const useBreakStatus = (): BreakStatus => {
 
     const checkBreaks = () => {
       const currentTime = Date.now();
-      const orderedBreaks = [...breaks].sort((a, b) => a.startTime - b.startTime);
+      const orderedBreaks = [...breaks].sort(compareBreakBySchedule);
       const currentBreak =
-        orderedBreaks.find(
-          (b) => currentTime >= b.startTime && currentTime < b.endTime
-        ) || null;
+        orderedBreaks.find((breakItem) => isBreakActiveAt(breakItem, currentTime)) ??
+        null;
 
       if (currentBreak) {
+        const resolvedBreak = resolveBreakForReference(currentBreak, currentTime);
         setStatus({
-          activeBreak: currentBreak,
-          timeRemaining: currentBreak.endTime - currentTime,
+          activeBreak: resolvedBreak,
+          timeRemaining: Math.max(0, resolvedBreak.endTime - currentTime),
           isBreakActive: true,
           loading: false,
         });
