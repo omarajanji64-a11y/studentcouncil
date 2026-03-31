@@ -162,18 +162,7 @@ export default function DashboardPage() {
                     <div key={pass.id} className="rounded-md border p-3">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0 space-y-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-medium">{pass.studentName}</span>
-                            <span className="text-xs text-muted-foreground">
-                              Grade {pass.studentGrade ?? "N/A"}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {pass.permissionLocation ?? "Canteen"}
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground break-words">
-                            {pass.reason}
-                          </p>
+                          <span className="font-medium">{pass.studentName}</span>
                         </div>
                         <div className="grid gap-1 text-xs text-muted-foreground sm:text-right">
                           <span>Issued: {format(new Date(pass.issuedAt), "PP p")}</span>
@@ -209,18 +198,7 @@ export default function DashboardPage() {
                     <div key={pass.id} className="rounded-md border p-3">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0 space-y-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-medium">{pass.studentName}</span>
-                            <span className="text-xs text-muted-foreground">
-                              Grade {pass.studentGrade ?? "N/A"}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {pass.permissionLocation ?? "Canteen"}
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground break-words">
-                            {pass.reason}
-                          </p>
+                          <span className="font-medium">{pass.studentName}</span>
                         </div>
                         <div className="grid gap-1 text-xs text-muted-foreground sm:text-right">
                           <span>Issued: {format(new Date(pass.issuedAt), "PP p")}</span>

@@ -132,24 +132,13 @@ export default function ActivePassesPage() {
               <Card key={pass.id}>
                 <CardContent className="pt-5 space-y-3">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2 text-base font-semibold">
-                        {pass.studentName}
-                        <span className="text-xs font-normal text-muted-foreground">
-                          Grade {pass.studentGrade ?? "N/A"}
+                    <div className="flex flex-wrap items-center gap-2 text-base font-semibold">
+                      {pass.studentName}
+                      {isRecent ? (
+                        <span className="text-emerald-500">
+                          <CheckCircle2 className="h-4 w-4" />
                         </span>
-                        <span className="text-xs font-normal text-muted-foreground">
-                          {pass.permissionLocation ?? "Canteen"}
-                        </span>
-                        {isRecent ? (
-                          <span className="text-emerald-500">
-                            <CheckCircle2 className="h-4 w-4" />
-                          </span>
-                        ) : null}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {pass.reason}
-                      </div>
+                      ) : null}
                     </div>
                     {canManage ? (
                       <DropdownMenu>
@@ -217,7 +206,6 @@ export default function ActivePassesPage() {
               <TableRow>
                 <TableHead>Student</TableHead>
                 <TableHead className="hidden lg:table-cell">Type</TableHead>
-                <TableHead className="hidden lg:table-cell">Reason</TableHead>
                 <TableHead className="hidden md:table-cell">Issued By</TableHead>
                 <TableHead className="hidden sm:table-cell">Issued At</TableHead>
                 <TableHead className="text-right">Expires At</TableHead>
@@ -232,7 +220,7 @@ export default function ActivePassesPage() {
               {loading ? (
                 <TableRow>
                   <TableCell
-                    colSpan={canManage ? 7 : 6}
+                    colSpan={canManage ? 6 : 5}
                     className="h-24 text-center"
                   >
                     <div className="space-y-3">
@@ -270,36 +258,28 @@ export default function ActivePassesPage() {
                         className="will-change-transform"
                       >
                         <TableCell className="font-medium">
-                          <div className="space-y-0.5">
-                            <div className="flex items-center gap-2">
-                              {pass.studentName}
-                              <AnimatePresence>
-                                {isRecent ? (
-                                  <motion.span
-                                    initial={{ opacity: 0, scale: 0.7 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.7 }}
-                                    transition={{
-                                      duration: durations.fast,
-                                      ease: easing,
-                                    }}
-                                    className="text-emerald-500"
-                                  >
-                                    <CheckCircle2 className="h-4 w-4" />
-                                  </motion.span>
-                                ) : null}
-                              </AnimatePresence>
-                            </div>
-                            <div className="text-xs font-normal text-muted-foreground">
-                              Grade {pass.studentGrade ?? "N/A"} - {pass.permissionLocation ?? "Canteen"}
-                            </div>
+                          <div className="flex items-center gap-2">
+                            {pass.studentName}
+                            <AnimatePresence>
+                              {isRecent ? (
+                                <motion.span
+                                  initial={{ opacity: 0, scale: 0.7 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.7 }}
+                                  transition={{
+                                    duration: durations.fast,
+                                    ease: easing,
+                                  }}
+                                  className="text-emerald-500"
+                                >
+                                  <CheckCircle2 className="h-4 w-4" />
+                                </motion.span>
+                              ) : null}
+                            </AnimatePresence>
                           </div>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell text-muted-foreground">
                           {getPassTypeLabel(pass.passType)}
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell text-muted-foreground">
-                          {pass.reason}
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           {pass.issuedBy}
@@ -352,7 +332,7 @@ export default function ActivePassesPage() {
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={canManage ? 7 : 6}
+                    colSpan={canManage ? 6 : 5}
                     className="h-24 text-center"
                   >
                     No active passes.
