@@ -25,9 +25,6 @@ export function OverridePassButton() {
   const [isCreating, setIsCreating] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [studentGender, setStudentGender] = useState<"male" | "female" | "">("");
-  const [studentGrade, setStudentGrade] = useState("");
-  const [permissionLocation, setPermissionLocation] = useState("Canteen");
-  const [reason, setReason] = useState("");
   const [durationMode, setDurationMode] = useState<"end_of_break" | "specific">(
     "specific"
   );
@@ -38,9 +35,6 @@ export function OverridePassButton() {
   const resetForm = () => {
     setStudentName("");
     setStudentGender("");
-    setStudentGrade("");
-    setPermissionLocation("Canteen");
-    setReason("");
     setDurationMinutes("10");
     setDurationMode("specific");
   };
@@ -49,11 +43,11 @@ export function OverridePassButton() {
 
   const handleOverride = async () => {
     if (!user) return;
-    if (!studentName || !studentGrade.trim() || !permissionLocation.trim()) {
+    if (!studentName.trim()) {
       toast({
         variant: "destructive",
         title: "Missing fields",
-        description: "Student name, grade, and permission location are required.",
+        description: "Student name is required.",
       });
       return;
     }
@@ -83,11 +77,9 @@ export function OverridePassButton() {
           : Date.now() + duration * 60 * 1000;
       await createPass(
         {
-          studentName,
+          studentName: studentName.trim(),
           studentGender,
-          studentGrade: studentGrade.trim(),
-          permissionLocation: permissionLocation.trim(),
-          reason,
+          reason: "",
           issuedBy: user.name,
           issuedById: user.uid,
           expiresAt: resolvedExpiresAt,
@@ -156,7 +148,7 @@ export function OverridePassButton() {
             Emergency use only
           </div>
           <p className="mt-1 text-xs text-destructive/80">
-            Overrides are logged with full details.
+            Overrides are logged with issuer and timing details.
           </p>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
@@ -193,18 +185,6 @@ export function OverridePassButton() {
           </div>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-          <Label htmlFor="override-grade" className="sm:text-right">
-            Grade
-          </Label>
-          <Input
-            id="override-grade"
-            placeholder="e.g., 10A"
-            className="sm:col-span-3"
-            value={studentGrade}
-            onChange={(event) => setStudentGrade(event.target.value)}
-          />
-        </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
           <Label htmlFor="override-duration" className="sm:text-right">
             Duration
           </Label>
@@ -220,30 +200,6 @@ export function OverridePassButton() {
               <SelectItem value="specific">Specific duration</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-          <Label htmlFor="override-location" className="sm:text-right">
-            Location
-          </Label>
-          <Input
-            id="override-location"
-            placeholder="e.g., Canteen"
-            className="sm:col-span-3"
-            value={permissionLocation}
-            onChange={(event) => setPermissionLocation(event.target.value)}
-          />
-        </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-          <Label htmlFor="override-reason" className="sm:text-right">
-            Reason
-          </Label>
-          <Input
-            id="override-reason"
-            placeholder="Optional"
-            className="sm:col-span-3"
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-          />
         </div>
         {durationMode === "specific" ? (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
